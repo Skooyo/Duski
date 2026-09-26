@@ -57,8 +57,12 @@ export function openChat(): void {
     openExternal(url);
   });
   w.on('close', () => {
-    const r = w.getBounds();
-    saveChatBounds({ x: r.x, y: r.y, width: r.width, height: r.height });
+    const r = w.getNormalBounds(); // not getBounds(): minimized is -32000,-32000 and maximized is full screen
+    try {
+      saveChatBounds({ x: r.x, y: r.y, width: r.width, height: r.height });
+    } catch {
+      // config.json not writable; losing the window position is harmless
+    }
   });
   w.on('closed', () => {
     win = null; // the window is destroyed to free RAM; the session stays

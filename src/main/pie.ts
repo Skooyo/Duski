@@ -37,7 +37,10 @@ export function togglePie(): void {
 function showPie(): void {
   cursor = screen.getCursorScreenPoint();
   const { bounds } = screen.getDisplayNearestPoint(cursor);
-  win.setBounds(bounds); // covers the display so a click outside the pie closes it
+  // Covers the display so a click outside the pie closes it. Twice: a move to a monitor
+  // with other scaling uses the old scale factor on the first call.
+  win.setBounds(bounds);
+  win.setBounds(bounds);
   win.webContents.send('pie:show', {
     x: cursor.x - bounds.x,
     y: cursor.y - bounds.y,

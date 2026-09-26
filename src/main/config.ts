@@ -53,10 +53,12 @@ export function loadConfig(): string | null {
   try {
     const raw = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
     if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw new Error('top level must be an object');
+    const pick = <T>(value: unknown, fallback: T): T => (typeof value === typeof fallback ? (value as T) : fallback);
     current = {
-      ...DEFAULTS,
-      ...raw,
-      models: { ...DEFAULTS.models, ...raw.models },
+      hotkey: pick(raw.hotkey, DEFAULTS.hotkey),
+      claudePath: pick(raw.claudePath, DEFAULTS.claudePath),
+      models: { chat: pick(raw.models?.chat, DEFAULTS.models.chat), translate: pick(raw.models?.translate, DEFAULTS.models.translate) },
+      translateTimeoutSec: Math.max(5, pick(raw.translateTimeoutSec, DEFAULTS.translateTimeoutSec)),
       chatWindow: { ...DEFAULTS.chatWindow, ...raw.chatWindow },
     };
     writable = true;

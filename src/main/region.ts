@@ -12,7 +12,11 @@ export async function selectRegion(): Promise<RegionImage | null> {
   const maxW = Math.max(...displays.map((d) => Math.round(d.bounds.width * d.scaleFactor)));
   const maxH = Math.max(...displays.map((d) => Math.round(d.bounds.height * d.scaleFactor)));
   const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: maxW, height: maxH } });
-  const shots = displays.map((d, i) => ({ d, img: (sources.find((s) => s.display_id === String(d.id)) ?? sources[i]).thumbnail }));
+  const shots = displays.flatMap((d, i) => {
+    const source = sources.find((s) => s.display_id === String(d.id)) ?? sources[i];
+    return source ? [{ d, img: source.thumbnail }] : [];
+  });
+  if (!shots.length) throw new Error('Screen capture failed');
   const cursor = screen.getCursorScreenPoint();
 
   return new Promise((resolve) => {
@@ -55,16 +59,20 @@ export async function selectRegion(): Promise<RegionImage | null> {
       const size = img.getSize();
       const sx = size.width / d.bounds.width;
       const sy = size.height / d.bounds.height;
-      const crop = img.crop({
-        x: Math.round(rect.x * sx),
-        y: Math.round(rect.y * sy),
-        width: Math.round(rect.width * sx),
-        height: Math.round(rect.height * sy),
-      });
-      fs.mkdirSync(TEMP_DIR, { recursive: true });
-      const file = path.join(TEMP_DIR, `region-${Date.now()}.png`);
-      fs.writeFileSync(file, crop.toPNG());
-      resolve({ path: file, rect: { x: d.bounds.x + rect.x, y: d.bounds.y + rect.y, width: rect.width, height: rect.height } });
+      try {
+        const crop = img.crop({
+          x: Math.round(rect.x * sx),
+          y: Math.round(rect.y * sy),
+          width: Math.round(rect.width * sx),
+          height: Math.round(rect.height * sy),
+        });
+        fs.mkdirSync(TEMP_DIR, { recursive: true });
+        const file = path.join(TEMP_DIR, `region-${Date.now()}.png`);
+        fs.writeFileSync(file, crop.toPNG());
+        resolve({ path: file, rect: { x: d.bounds.x + rect.x, y: d.bounds.y + rect.y, width: rect.width, height: rect.height } });
+      } catch {
+        resolve(null); // crop or disk error: treat as cancel, never leave the action hanging
+      }
     }
   });
 }

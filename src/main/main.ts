@@ -18,6 +18,11 @@ if (!app.requestSingleInstanceLock()) {
     // Stay alive in the tray.
   });
   app.on('will-quit', () => globalShortcut.unregisterAll());
+  // Every window has the preload bridge (which can start claude with full tools), so no window may load remote content.
+  app.on('web-contents-created', (_e, wc) => {
+    wc.on('will-navigate', (e) => e.preventDefault());
+    wc.setWindowOpenHandler(() => ({ action: 'deny' }));
+  });
   void app.whenReady().then(start);
 }
 
@@ -26,9 +31,12 @@ function start(): void {
   const cfg = getConfig();
   createTray([{ label: 'Open chat', click: openChat }, { type: 'separator' }]);
   if (configError) notify('Duski config', configError);
-  execFile(cfg.claudePath, ['--version'], { timeout: 15_000, windowsHide: true }, (err) => {
-    if (err) notify('Claude Code not found', `"${cfg.claudePath} --version" failed. Install Claude Code, or run "claude" once to log in.`);
-  });
+  const claudeMissing = () => notify('Claude Code not found', `"${cfg.claudePath} --version" failed. Install Claude Code, or run "claude" once to log in.`);
+  try {
+    execFile(cfg.claudePath, ['--version'], { timeout: 15_000, windowsHide: true }, (err) => err && claudeMissing());
+  } catch {
+    claudeMissing(); // e.g. EINVAL for a .cmd path; startup must continue
+  }
 
   initPopupIpc();
   initChatIpc();

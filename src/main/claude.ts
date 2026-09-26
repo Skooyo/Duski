@@ -1,4 +1,4 @@
-import { execFile, spawn } from 'node:child_process';
+import { execFile, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 
 export type ClaudeEvent =
   | { type: 'session'; id: string }
@@ -29,7 +29,13 @@ export interface ClaudeRun {
 const STREAM_ARGS = ['-p', '--output-format', 'stream-json', '--verbose', '--include-partial-messages'];
 
 export function runClaude(o: RunOptions): ClaudeRun {
-  const child = spawn(o.claudePath, [...STREAM_ARGS, ...o.args], { cwd: o.cwd, windowsHide: true });
+  let child: ChildProcessWithoutNullStreams;
+  try {
+    child = spawn(o.claudePath, [...STREAM_ARGS, ...o.args], { cwd: o.cwd, windowsHide: true });
+  } catch (err) {
+    // spawn throws (not emits) for e.g. a .cmd path without a shell
+    return { done: Promise.resolve({ code: null, stderr: (err as Error).message, cancelled: false }), cancel() {} };
+  }
   let stderr = '';
   let pending = '';
   let cancelled = false;

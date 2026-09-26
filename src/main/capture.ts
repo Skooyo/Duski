@@ -2,8 +2,17 @@ import { clipboard, ClipboardItem } from 'electron';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+let chain: Promise<unknown> = Promise.resolve();
+
 /** Sends Ctrl+C to the foreground app and reads the copied text. Restores the old clipboard. */
-export async function getSelectedText(): Promise<string> {
+export function getSelectedText(): Promise<string> {
+  // One capture at a time: an overlapping one would snapshot the cleared clipboard and lose the user's data.
+  const next = chain.then(captureOnce, captureOnce);
+  chain = next.catch(() => {});
+  return next;
+}
+
+async function captureOnce(): Promise<string> {
   const saved = await snapshotClipboard();
   clipboard.clear();
   try {
@@ -18,8 +27,12 @@ export async function getSelectedText(): Promise<string> {
     }
     return '';
   } finally {
-    if (saved.length) await clipboard.write(saved);
-    else clipboard.clear();
+    try {
+      if (saved.length) await clipboard.write(saved);
+      else clipboard.clear();
+    } catch {
+      // restore failed; keep the copied selection rather than hide the translation behind an error
+    }
   }
 }
 
