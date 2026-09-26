@@ -1,6 +1,6 @@
 # Duski v1: radial menu, agent chat, translation
 
-Status: spec approved in chat 2026-09-26, pending written review
+Status: v1 implemented 2026-09-27, manual test in manual-test.md
 
 ## Goal
 
