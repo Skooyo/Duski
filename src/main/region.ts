@@ -30,7 +30,7 @@ export async function selectRegion(): Promise<RegionImage | null> {
         movable: false,
         enableLargerThanScreen: true,
         show: false,
-        backgroundColor: '#000000', // Electron's default is white; it flashed before the screenshot painted
+        transparent: true, // before the screenshot paints, the real (identical) screen shows through: no flash
         webPreferences: { preload: path.join(__dirname, 'preload.js') },
       });
       w.setAlwaysOnTop(true, 'screen-saver');
