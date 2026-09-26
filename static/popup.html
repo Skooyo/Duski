@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
+  <title>Duski translation</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="popup" data-status="loading">
+  <div id="card">
+    <div id="bar">
+      <span class="spinner" aria-hidden="true"></span>
+      <span id="status" role="status">Translating…</span>
+      <button id="copy">Copy</button>
+      <button id="close" aria-label="Close">✕</button>
+    </div>
+    <div id="text" tabindex="0"></div>
+  </div>
+  <script src="../dist/renderer/popup.js"></script>
+</body>
+</html>

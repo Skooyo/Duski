@@ -1,0 +1,64 @@
+:root {
+  --bg: #16181d;
+  --panel: #1f2229;
+  --line: #2e323b;
+  --text: #e7e9ee;
+  --muted: #9aa0ab;
+  --accent: #5f7ae0;
+  --accent-soft: rgba(95, 122, 224, 0.18);
+  --error: #e0605f;
+  color-scheme: dark;
+  font: 14px/1.5 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --line: #dde0e6;
+    --text: #1b1d22;
+    --muted: #5d6370;
+    --accent: #3d5bd0;
+    --accent-soft: rgba(61, 91, 208, 0.12);
+    --error: #c23b3a;
+    color-scheme: light;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--text); background: var(--bg); }
+button {
+  font: inherit; color: var(--text); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer;
+}
+button:hover { border-color: var(--accent); }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Pie */
+body.pie { background: transparent; overflow: hidden; user-select: none; }
+body.pie.open { background: rgba(0, 0, 0, 0.12); } /* non-zero alpha so clicks outside the pie reach this window */
+.pie svg { display: block; width: 100vw; height: 100vh; }
+.wheel { animation: pie-in 0.12s ease-out; }
+.slice { cursor: pointer; }
+.slice path { fill: var(--panel); stroke: var(--line); stroke-width: 1; transition: fill 0.1s; }
+.slice:hover path { fill: var(--accent); }
+.slice text { fill: var(--text); pointer-events: none; }
+.slice .icon { font-size: 22px; }
+.slice .label { font-size: 12px; fill: var(--muted); }
+.slice:hover .label { fill: var(--text); }
+.hub { fill: var(--bg); stroke: var(--line); }
+@keyframes pie-in { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .wheel { animation: none; } }
+
+/* Popup */
+body.popup { background: var(--panel); border: 1px solid var(--line); overflow: hidden; }
+#card { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; }
+#bar { display: flex; align-items: center; gap: 6px; -webkit-app-region: drag; }
+#bar button { -webkit-app-region: no-drag; padding: 2px 8px; }
+#status { flex: 1; color: var(--muted); font-size: 12px; }
+#text { white-space: pre-wrap; overflow-y: auto; max-height: 330px; user-select: text; }
+[data-status='error'] #text { color: var(--error); }
+.spinner {
+  display: none; width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--line); border-top-color: var(--accent); animation: spin 0.8s linear infinite;
+}
+[data-status='loading'] .spinner, [data-status='streaming'] .spinner { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
