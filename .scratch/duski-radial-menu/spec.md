@@ -128,7 +128,7 @@ interface ActionContext {
 
 ### Claude call (both modes)
 
-- `--model <models.translate>` (default `haiku`).
+- `--model <models.translate>` (default `sonnet`; Haiku was too weak for Japanese).
 - `--system-prompt`: "Translate to English. Output only the translation. Keep line breaks. If the text is already English, reply `Already English`."
 - Selection mode: no tools. The text goes to stdin.
 - Region mode: only the `Read` tool. The stdin prompt names the PNG path.
@@ -149,7 +149,7 @@ interface ActionContext {
 {
   "hotkey": "Ctrl+Shift+Space",
   "claudePath": "claude",
-  "models": { "chat": "sonnet", "translate": "haiku" },
+  "models": { "chat": "sonnet", "translate": "sonnet" },
   "translateTimeoutSec": 60,
   "chatWindow": { "x": null, "y": null, "width": 480, "height": 640 }
 }

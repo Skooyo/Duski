@@ -24,7 +24,7 @@ export interface Config {
 export const DEFAULTS: Config = {
   hotkey: 'Ctrl+Shift+Space',
   claudePath: 'claude',
-  models: { chat: 'sonnet', translate: 'haiku' },
+  models: { chat: 'sonnet', translate: 'sonnet' },
   translateTimeoutSec: 60,
   chatWindow: { x: null, y: null, width: 480, height: 640 },
 };
