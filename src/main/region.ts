@@ -30,15 +30,22 @@ export async function selectRegion(): Promise<RegionImage | null> {
         movable: false,
         enableLargerThanScreen: true,
         show: false,
+        backgroundColor: '#000000', // Electron's default is white; it flashed before the screenshot painted
         webPreferences: { preload: path.join(__dirname, 'preload.js') },
       });
       w.setAlwaysOnTop(true, 'screen-saver');
-      w.webContents.once('did-finish-load', () => {
-        w.webContents.send('region:init', img.toDataURL());
+      w.webContents.once('did-finish-load', () => w.webContents.send('region:init', img.toDataURL()));
+      // Show only after the renderer has painted the screenshot, so the screen never blinks.
+      let shown = false;
+      const reveal = () => {
+        if (shown || w.isDestroyed()) return;
+        shown = true;
         w.setBounds(d.bounds);
         w.show();
         if (screen.getDisplayNearestPoint(cursor).id === d.id) w.focus(); // Esc goes to this window
-      });
+      };
+      w.webContents.ipc.once('region:ready', reveal);
+      setTimeout(reveal, 1500); // never leave the user without an overlay if the signal is lost
       w.on('closed', () => finish(null, -1)); // Alt+F4 counts as cancel
       void w.loadFile(path.join(__dirname, '..', 'static', 'region.html'));
       return w;

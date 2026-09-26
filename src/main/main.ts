@@ -27,6 +27,7 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 function start(): void {
+  app.setAppUserModelId('com.duski.app'); // matches build.appId, so Windows groups balloons and taskbar under Duski
   const configError = loadConfig();
   const cfg = getConfig();
   createTray([{ label: 'Open chat', click: openChat }, { type: 'separator' }]);

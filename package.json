@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node build.mjs",
     "typecheck": "tsc --noEmit",
-    "start": "node build.mjs && electron ."
+    "start": "node build.mjs && electron .",
+    "dist": "node build.mjs && electron-builder --win nsis"
   },
   "dependencies": {
     "@nut-tree-fork/nut-js": "^4.2.6",
@@ -16,10 +17,38 @@
   "devDependencies": {
     "@types/node": "^26.6.3",
     "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
     "esbuild": "^0.28.2",
     "typescript": "^7.0.2"
   },
   "allowScripts": {
     "esbuild@0.28.2": true
+  },
+  "description": "Radial pie menu overlay with Claude chat and translation",
+  "author": "Duski",
+  "build": {
+    "appId": "com.duski.app",
+    "productName": "Duski",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "!dist/**/*.map",
+      "static/**/*",
+      "resources/duski-icon.png",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "resources/duski-icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Duski"
+    }
   }
 }

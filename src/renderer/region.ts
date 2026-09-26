@@ -3,8 +3,11 @@ const box = document.getElementById('box') as HTMLDivElement;
 let start: { x: number; y: number } | null = null;
 let rect = { x: 0, y: 0, width: 0, height: 0 };
 
-window.duski.on('region:init', (dataUrl: string) => {
+window.duski.on('region:init', async (dataUrl: string) => {
   shot.src = dataUrl;
+  await shot.decode().catch(() => {});
+  // Two frames: the first commits the image, the second guarantees it is on screen before main shows the window.
+  requestAnimationFrame(() => requestAnimationFrame(() => window.duski.send('region:ready')));
 });
 
 addEventListener('mousedown', (e) => {

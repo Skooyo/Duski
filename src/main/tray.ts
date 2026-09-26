@@ -22,6 +22,15 @@ export function createTray(extra: Electron.MenuItemConstructorOptions[] = []): v
     Menu.buildFromTemplate([
       ...extra,
       { label: 'Open agent folder', click: () => void shell.openPath(AGENT_HOME) },
+      // Only the installed .exe can start at login; in `npm start` this would register a bare electron.exe.
+      ...(app.isPackaged
+        ? [{
+            label: 'Start with Windows',
+            type: 'checkbox' as const,
+            checked: app.getLoginItemSettings().openAtLogin,
+            click: (item: Electron.MenuItem) => app.setLoginItemSettings({ openAtLogin: item.checked }),
+          }]
+        : []),
       { type: 'separator' },
       { label: 'Quit', click: () => app.quit() },
     ]),
