@@ -1,27 +1,22 @@
 import { app, Menu, nativeImage, shell, Tray } from 'electron';
+import path from 'node:path';
 import { AGENT_HOME } from './config';
 
 let tray: Tray | null = null; // module-level so it is not garbage-collected
 
-/** 16x16 blue dot, drawn in code so the app needs no icon file. */
-function dotIcon(): Electron.NativeImage {
-  const size = 16;
-  const buf = Buffer.alloc(size * size * 4);
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      if (Math.hypot(x - 7.5, y - 7.5) > 7) continue;
-      const i = (y * size + x) * 4;
-      buf[i] = 0xe0; // B
-      buf[i + 1] = 0x7a; // G
-      buf[i + 2] = 0x5f; // R
-      buf[i + 3] = 0xff; // A
-    }
+/** Duski's head (resources/duski-icon.png, 256 px). Sizes 16 and 32 keep the tray icon sharp at 100% and 200% scaling. */
+export function appIcon(): Electron.NativeImage {
+  const src = nativeImage.createFromPath(path.join(__dirname, '..', 'resources', 'duski-icon.png'));
+  const icon = nativeImage.createEmpty();
+  for (const scaleFactor of [1, 2]) {
+    const size = 16 * scaleFactor;
+    icon.addRepresentation({ scaleFactor, width: size, height: size, buffer: src.resize({ width: size, height: size, quality: 'best' }).toPNG() });
   }
-  return nativeImage.createFromBitmap(buf, { width: size, height: size });
+  return icon;
 }
 
 export function createTray(extra: Electron.MenuItemConstructorOptions[] = []): void {
-  tray = new Tray(dotIcon());
+  tray = new Tray(appIcon());
   tray.setToolTip('Duski');
   tray.setContextMenu(
     Menu.buildFromTemplate([

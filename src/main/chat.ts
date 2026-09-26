@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { ChatEvent } from '../shared/chat-events';
 import { lastLines, runClaude, type ClaudeRun } from './claude';
 import { AGENT_HOME, getConfig, saveChatBounds } from './config';
+import { appIcon } from './tray';
 
 let win: BrowserWindow | null = null;
 let sessionId: string | null = null;
@@ -38,6 +39,7 @@ export function openChat(): void {
     minWidth: 320,
     minHeight: 320,
     title: 'Duski Chat',
+    icon: appIcon(), // taskbar icon
     autoHideMenuBar: true,
     show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js') },

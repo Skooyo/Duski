@@ -22,3 +22,6 @@ textarea {
   flex: 1; resize: none; font: inherit; color: var(--text); background: var(--panel);
   border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px;
 }
+.reply { display: flex; gap: 8px; align-items: flex-start; }
+.avatar { flex: none; width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }
+.reply-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding-top: 3px; }

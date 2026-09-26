@@ -11,12 +11,14 @@ const pinBtn = document.getElementById('pin') as HTMLButtonElement;
 
 let busy = false;
 let segment: Segment | null = null; // assistant text block that receives the next deltas
+let reply: HTMLElement | null = null; // body of the current AI reply (next to its avatar)
 const dirty = new Set<Segment>();
 const tools = new Map<string, HTMLDetailsElement>();
 
 window.duski.on('chat:replay', (events: ChatEvent[], isBusy: boolean) => {
   log.replaceChildren();
   segment = null;
+  reply = null;
   tools.clear();
   events.forEach(apply);
   setBusy(isBusy);
@@ -30,7 +32,8 @@ function apply(e: ChatEvent): void {
   switch (e.kind) {
     case 'user':
       segment = null;
-      add('div', 'msg user').textContent = e.text;
+      reply = null;
+      add('div', 'msg user', log).textContent = e.text;
       setBusy(true);
       break;
     case 'text':
@@ -65,6 +68,7 @@ function apply(e: ChatEvent): void {
       break;
     case 'done':
       segment = null;
+      reply = null;
       setBusy(false);
       break;
   }
@@ -84,11 +88,27 @@ function renderDirty(): void {
   if (stick) log.scrollTop = log.scrollHeight;
 }
 
-function add(tag: string, cls: string): HTMLElement {
+function add(tag: string, cls: string, parent: HTMLElement = replyBody()): HTMLElement {
   const node = document.createElement(tag);
   node.className = cls;
-  log.append(node);
+  parent.append(node);
   return node;
+}
+
+/** One avatar per AI reply: text blocks, tool lines and errors of the reply stack beside it. */
+function replyBody(): HTMLElement {
+  if (reply) return reply;
+  const row = document.createElement('div');
+  row.className = 'reply';
+  const avatar = document.createElement('img');
+  avatar.className = 'avatar';
+  avatar.src = '../resources/duski-icon.png';
+  avatar.alt = 'Duski';
+  reply = document.createElement('div');
+  reply.className = 'reply-body';
+  row.append(avatar, reply);
+  log.append(row);
+  return reply;
 }
 
 function nearBottom(): boolean {
