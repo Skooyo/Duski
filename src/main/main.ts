@@ -3,10 +3,12 @@ import { execFile } from 'node:child_process';
 import { actions } from './actions';
 import type { ActionContext, Point } from './actions/types';
 import { getSelectedText } from './capture';
+import { initChatIpc, openChat } from './chat';
 import { runClaude } from './claude';
 import { AGENT_HOME, getConfig, loadConfig } from './config';
 import { initPie, togglePie } from './pie';
 import { initPopupIpc, showPopup } from './popup';
+import { selectRegion } from './region';
 import { createTray, notify } from './tray';
 
 if (!app.requestSingleInstanceLock()) {
@@ -22,13 +24,14 @@ if (!app.requestSingleInstanceLock()) {
 function start(): void {
   const configError = loadConfig();
   const cfg = getConfig();
-  createTray();
+  createTray([{ label: 'Open chat', click: openChat }, { type: 'separator' }]);
   if (configError) notify('Duski config', configError);
   execFile(cfg.claudePath, ['--version'], { timeout: 15_000, windowsHide: true }, (err) => {
     if (err) notify('Claude Code not found', `"${cfg.claudePath} --version" failed. Install Claude Code, or run "claude" once to log in.`);
   });
 
   initPopupIpc();
+  initChatIpc();
   initPie(actions, (action, cursor) => {
     action.run(contextAt(cursor)).catch((err: unknown) => {
       showPopup(cursor).update('error', err instanceof Error ? err.message : String(err));
@@ -38,7 +41,7 @@ function start(): void {
 }
 
 function contextAt(cursor: Point): ActionContext {
-  return { cursor, getSelectedText, runClaude, showPopup };
+  return { cursor, getSelectedText, selectRegion, runClaude, showPopup, openChat };
 }
 
 function registerHotkey(hotkey: string): void {

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'" />
+  <title>Duski Chat</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="chat.css" />
+</head>
+<body class="chat">
+  <header>
+    <button id="pin" aria-pressed="false" title="Keep on top">Pin</button>
+    <span class="spacer"></span>
+    <button id="new">New chat</button>
+  </header>
+  <main id="log" aria-live="polite"></main>
+  <footer>
+    <textarea id="input" rows="2" aria-label="Message" placeholder="Message Duski (Enter to send, Shift+Enter for a new line)"></textarea>
+    <button id="send">Send</button>
+  </footer>
+  <script src="../dist/renderer/chat.js"></script>
+</body>
+</html>

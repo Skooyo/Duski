@@ -1,0 +1,6 @@
+/* Region */
+body.region { background: #000; overflow: hidden; cursor: crosshair; user-select: none; }
+#shot { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; }
+body.region::after { content: ''; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); pointer-events: none; }
+body.region.dragging::after { display: none; }
+#box { position: fixed; outline: 1px solid #fff; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.45); pointer-events: none; }
