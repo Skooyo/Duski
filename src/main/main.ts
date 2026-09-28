@@ -9,6 +9,7 @@ import { AGENT_HOME, getConfig, loadConfig } from './config';
 import { initPie, togglePie } from './pie';
 import { initPopupIpc, showPopup } from './popup';
 import { selectRegion } from './region';
+import { initTodos, openTodo } from './todo';
 import { createTray, notify } from './tray';
 
 if (!app.requestSingleInstanceLock()) {
@@ -30,7 +31,7 @@ function start(): void {
   app.setAppUserModelId('com.duski.app'); // matches build.appId, so Windows groups balloons and taskbar under Duski
   const configError = loadConfig();
   const cfg = getConfig();
-  createTray([{ label: 'Open chat', click: openChat }, { type: 'separator' }]);
+  createTray([{ label: 'Open chat', click: openChat }, { label: 'Open todo', click: openTodo }, { type: 'separator' }]);
   if (configError) notify('Duski config', configError);
   const claudeMissing = () => notify('Claude Code not found', `"${cfg.claudePath} --version" failed. Install Claude Code, or run "claude" once to log in.`);
   try {
@@ -41,6 +42,7 @@ function start(): void {
 
   initPopupIpc();
   initChatIpc();
+  initTodos();
   initPie(actions, (action, cursor) => {
     action.run(contextAt(cursor)).catch((err: unknown) => {
       showPopup(cursor).update('error', err instanceof Error ? err.message : String(err));
@@ -50,7 +52,7 @@ function start(): void {
 }
 
 function contextAt(cursor: Point): ActionContext {
-  return { cursor, getSelectedText, selectRegion, runClaude, showPopup, openChat };
+  return { cursor, getSelectedText, selectRegion, runClaude, showPopup, openChat, openTodo };
 }
 
 function registerHotkey(hotkey: string): void {

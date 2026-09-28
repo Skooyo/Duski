@@ -19,6 +19,7 @@ export interface Config {
   models: { chat: string; translate: string };
   translateTimeoutSec: number;
   chatWindow: WindowBounds;
+  todoWindow: WindowBounds;
 }
 
 export const DEFAULTS: Config = {
@@ -27,13 +28,16 @@ export const DEFAULTS: Config = {
   models: { chat: 'sonnet', translate: 'sonnet' },
   translateTimeoutSec: 60,
   chatWindow: { x: null, y: null, width: 480, height: 640 },
+  todoWindow: { x: null, y: null, width: 440, height: 560 },
 };
 
 const STARTER_CLAUDE_MD = `# Duski agent
 
 You are Duski, a desktop assistant for one user on Windows 11.
 
-- Save notes and reminders as markdown files in \`notes/\`.
+- Save notes as markdown files in \`notes/\`.
+- Todos and reminders live in \`todo.md\`, one per line: \`- [ ] Text @YYYY-MM-DD HH:MM\` (the time is optional).
+  Check one off as \`- [x] Text done:YYYY-MM-DD HH:MM\` with the current time. Duski shows a reminder when the time passes.
 - Keep replies short unless the user asks for detail.
 `;
 
@@ -49,6 +53,7 @@ export function loadConfig(): string | null {
   fs.mkdirSync(path.join(AGENT_HOME, 'notes'), { recursive: true });
   writeIfMissing(path.join(AGENT_HOME, 'CLAUDE.md'), STARTER_CLAUDE_MD);
   writeIfMissing(path.join(AGENT_HOME, '.mcp.json'), '{\n  "mcpServers": {}\n}\n');
+  writeIfMissing(path.join(AGENT_HOME, 'todo.md'), '# Todo\n\n');
   writeIfMissing(CONFIG_PATH, JSON.stringify(DEFAULTS, null, 2) + '\n');
   try {
     const raw = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
@@ -60,6 +65,7 @@ export function loadConfig(): string | null {
       models: { chat: pick(raw.models?.chat, DEFAULTS.models.chat), translate: pick(raw.models?.translate, DEFAULTS.models.translate) },
       translateTimeoutSec: Math.max(5, pick(raw.translateTimeoutSec, DEFAULTS.translateTimeoutSec)),
       chatWindow: { ...DEFAULTS.chatWindow, ...raw.chatWindow },
+      todoWindow: { ...DEFAULTS.todoWindow, ...raw.todoWindow },
     };
     writable = true;
     return null;
@@ -74,8 +80,8 @@ export function getConfig(): Config {
   return current;
 }
 
-export function saveChatBounds(bounds: WindowBounds): void {
-  current = { ...current, chatWindow: bounds };
+export function saveBounds(key: 'chatWindow' | 'todoWindow', bounds: WindowBounds): void {
+  current = { ...current, [key]: bounds };
   // Never overwrite a file the user broke; they would lose their edits.
   if (writable) fs.writeFileSync(CONFIG_PATH, JSON.stringify(current, null, 2) + '\n');
 }

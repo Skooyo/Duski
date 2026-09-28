@@ -6,6 +6,7 @@
   "scripts": {
     "build": "node build.mjs",
     "typecheck": "tsc --noEmit",
+    "check": "node --no-warnings src/shared/todo.check.mts",
     "start": "node build.mjs && electron .",
     "dist": "node build.mjs && electron-builder --win nsis"
   },

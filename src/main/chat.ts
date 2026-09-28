@@ -1,9 +1,9 @@
-import { BrowserWindow, ipcMain, screen, shell } from 'electron';
+import { BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import type { ChatEvent } from '../shared/chat-events';
 import { lastLines, runClaude, type ClaudeRun } from './claude';
-import { AGENT_HOME, getConfig, saveChatBounds } from './config';
-import { appIcon } from './tray';
+import { AGENT_HOME, getConfig } from './config';
+import { savedWindow } from './saved-window';
 
 let win: BrowserWindow | null = null;
 let sessionId: string | null = null;
@@ -30,25 +30,8 @@ export function openChat(): void {
     win.focus();
     return;
   }
-  const b = getConfig().chatWindow;
-  const pos = b.x !== null && b.y !== null && onScreen(b.x, b.y) ? { x: b.x, y: b.y } : {};
-  const w = new BrowserWindow({
-    ...pos,
-    width: b.width,
-    height: b.height,
-    minWidth: 320,
-    minHeight: 320,
-    title: 'Duski Chat',
-    icon: appIcon(), // taskbar icon
-    autoHideMenuBar: true,
-    show: false,
-    webPreferences: { preload: path.join(__dirname, 'preload.js') },
-  });
+  const w = savedWindow('chatWindow', 'Duski Chat');
   win = w;
-  w.once('ready-to-show', () => {
-    w.show();
-    w.focus();
-  });
   // Links in replies open in the browser, never inside the chat window.
   w.webContents.setWindowOpenHandler(({ url }) => {
     openExternal(url);
@@ -57,14 +40,6 @@ export function openChat(): void {
   w.webContents.on('will-navigate', (e, url) => {
     e.preventDefault();
     openExternal(url);
-  });
-  w.on('close', () => {
-    const r = w.getNormalBounds(); // not getBounds(): minimized is -32000,-32000 and maximized is full screen
-    try {
-      saveChatBounds({ x: r.x, y: r.y, width: r.width, height: r.height });
-    } catch {
-      // config.json not writable; losing the window position is harmless
-    }
   });
   w.on('closed', () => {
     win = null; // the window is destroyed to free RAM; the session stays
@@ -121,8 +96,4 @@ function truncate(s: string, n: number): string {
 
 function openExternal(url: string): void {
   if (/^https?:\/\//i.test(url)) void shell.openExternal(url);
-}
-
-function onScreen(x: number, y: number): boolean {
-  return screen.getAllDisplays().some(({ workArea: a }) => x >= a.x && y >= a.y && x < a.x + a.width && y < a.y + a.height);
 }

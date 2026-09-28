@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'" />
+  <title>Duski Todo</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="todo.css" />
+</head>
+<body class="notebook">
+  <header>
+    <button id="pin" aria-pressed="false" title="Keep on top">Pin</button>
+    <span id="status" role="status"></span>
+    <button id="open-file" title="Open todo.md in your text editor">Open file</button>
+  </header>
+  <main id="page" aria-label="Todo notebook"></main>
+  <div id="menu" role="listbox" aria-label="Reminder" hidden></div>
+  <script src="../dist/renderer/todo.js"></script>
+</body>
+</html>

@@ -28,6 +28,7 @@ export interface ActionContext {
   runClaude(o: RunOptions): ClaudeRun;
   showPopup(anchor: Point): PopupHandle;
   openChat(): void;
+  openTodo(): void;
 }
 
 export interface PieAction {
