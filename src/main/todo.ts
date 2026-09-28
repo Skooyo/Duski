@@ -1,9 +1,10 @@
-import { BrowserWindow, ipcMain, nativeImage, Notification, shell } from 'electron';
+import { BrowserWindow, ipcMain, shell } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseTodos, toDate, type TodoBlock } from '../shared/todo';
 import { AGENT_HOME } from './config';
 import { savedWindow } from './saved-window';
+import { toast } from './tray';
 
 const TODO_FILE = 'todo.md';
 const TODO_PATH = path.join(AGENT_HOME, TODO_FILE);
@@ -14,7 +15,6 @@ let md = ''; // file content with '\n' line ends; the notebook window sees the s
 let todos: TodoBlock[] = [];
 let win: BrowserWindow | null = null;
 let reloadTimer: NodeJS.Timeout | undefined;
-const toasts = new Set<Notification>(); // keeps a reference, or the click handler can be garbage-collected
 
 /** Loads todo.md, watches it, and shows reminders for open todos whose time passes. */
 export function initTodos(): void {
@@ -43,11 +43,11 @@ export function initTodos(): void {
   });
 
   const overdue = todos.filter((t) => !t.done && dueMs(t) <= Date.now()).length;
-  if (overdue) toast('Duski', `${overdue} overdue todo${overdue > 1 ? 's' : ''}`);
+  if (overdue) toast('Duski', `${overdue} overdue todo${overdue > 1 ? 's' : ''}`, openTodo);
   let last = Date.now();
   setInterval(() => {
     const now = Date.now();
-    for (const t of todos) if (!t.done && dueMs(t) > last && dueMs(t) <= now) toast('Duski reminder', t.text);
+    for (const t of todos) if (!t.done && dueMs(t) > last && dueMs(t) <= now) toast('Duski reminder', t.text, openTodo);
     last = now;
   }, CHECK_MS);
 }
@@ -94,10 +94,3 @@ function load(): void {
   if (changed && win && !win.isDestroyed()) win.webContents.send('todo:file', md);
 }
 
-function toast(title: string, body: string): void {
-  const n = new Notification({ title, body, icon: nativeImage.createFromPath(path.join(__dirname, '..', 'resources', 'duski-icon.png')) });
-  toasts.add(n);
-  n.on('click', openTodo);
-  n.on('close', () => toasts.delete(n));
-  n.show();
-}

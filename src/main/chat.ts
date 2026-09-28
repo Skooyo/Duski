@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import type { ChatEvent } from '../shared/chat-events';
-import { lastLines, runClaude, type ClaudeRun } from './claude';
+import { lastLines, runClaude, type ClaudeEvent, type ClaudeRun } from './claude';
 import { AGENT_HOME, getConfig } from './config';
 import { savedWindow } from './saved-window';
 
@@ -60,13 +60,10 @@ function send(text: string): void {
     onEvent: (e) => {
       if (run !== thisRun) return; // a "New chat" happened; drop the old run's output
       if (e.type === 'session') sessionId = e.id;
-      else if (e.type === 'text') emit({ kind: 'text', text: e.text });
-      else if (e.type === 'tool') emit({ kind: 'tool', id: e.id, name: e.name, summary: summarize(e.input), input: JSON.stringify(e.input, null, 2) });
-      else if (e.type === 'tool-result') emit({ kind: 'tool-result', id: e.id, output: truncate(e.output, 4000), isError: e.isError });
-      else if (e.type === 'result' && e.isError) {
-        resultError = true;
-        emit({ kind: 'error', text: e.text });
-      }
+      const ce = toChatEvent(e);
+      if (!ce) return;
+      if (ce.kind === 'error') resultError = true;
+      emit(ce);
     },
   });
   run = thisRun;
@@ -77,6 +74,25 @@ function send(text: string): void {
     else if (r.code !== 0 && !resultError) emit({ kind: 'error', text: lastLines(r.stderr, 5) || `claude exited with code ${r.code}` });
     emit({ kind: 'done' });
   });
+}
+
+/** Claude stream event → chat log entry. Null for events the log does not show. */
+export function toChatEvent(e: ClaudeEvent): ChatEvent | null {
+  if (e.type === 'text') return { kind: 'text', text: e.text };
+  if (e.type === 'tool') return { kind: 'tool', id: e.id, name: e.name, summary: summarize(e.input), input: JSON.stringify(e.input, null, 2) };
+  if (e.type === 'tool-result') return { kind: 'tool-result', id: e.id, output: truncate(e.output, 4000), isError: e.isError };
+  if (e.type === 'result' && e.isError) return { kind: 'error', text: e.text };
+  return null;
+}
+
+/** Starts a new chat that resumes another session (a quick ask). Returns false while a chat reply is running. */
+export function continueInChat(session: string, history: ChatEvent[]): boolean {
+  if (run) return false;
+  sessionId = session;
+  events = [...history, { kind: 'done' }];
+  win?.webContents.send('chat:replay', events, false);
+  openChat();
+  return true;
 }
 
 function emit(e: ChatEvent): void {

@@ -1,0 +1,30 @@
+/* Ask window. Loaded after style.css; reuses the popup card and bar. */
+body.ask #card { gap: 10px; }
+#title { font-size: 13px; font-weight: 600; }
+body.ask #status { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+body.ask #status.error { color: var(--error); }
+
+/* What the question is about: the selected text (4 lines) or the area image. */
+#context { font-size: 13px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 8px; }
+#context.text { white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+#context img { display: block; max-width: 100%; max-height: 120px; border-radius: 4px; border: 1px solid var(--line); }
+
+#presets { display: flex; flex-wrap: wrap; gap: 6px; }
+#presets button { font-size: 12px; padding: 2px 10px; border-radius: 999px; color: var(--muted); }
+#presets button:hover:not(:disabled) { color: var(--text); }
+#presets button:disabled { opacity: 0.5; cursor: default; }
+
+#ask { display: flex; gap: 6px; margin: 0; }
+#q { flex: 1; min-width: 0; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+#q:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button.primary:hover { filter: brightness(1.1); }
+
+#answer { max-height: 420px; overflow-y: auto; user-select: text; overflow-wrap: anywhere; border-top: 1px solid var(--line); padding-top: 10px; }
+#answer > :first-child { margin-top: 0; }
+#answer > :last-child { margin-bottom: 0; }
+#answer pre { background: var(--bg); padding: 8px; border-radius: 6px; overflow-x: auto; }
+#answer code { font-family: 'Cascadia Code', Consolas, monospace; font-size: 13px; }
+#answer a { color: var(--accent); }
+#actions { display: flex; gap: 6px; justify-content: flex-end; }
+#answer[hidden], #actions[hidden] { display: none; }

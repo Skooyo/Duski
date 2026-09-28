@@ -1,4 +1,4 @@
-import { app, Menu, nativeImage, shell, Tray } from 'electron';
+import { app, Menu, nativeImage, Notification, shell, Tray } from 'electron';
 import path from 'node:path';
 import { AGENT_HOME } from './config';
 
@@ -35,6 +35,17 @@ export function createTray(extra: Electron.MenuItemConstructorOptions[] = []): v
       { label: 'Quit', click: () => app.quit() },
     ]),
   );
+}
+
+const toasts = new Set<Notification>(); // keeps a reference, or the click handler can be garbage-collected
+
+/** Windows toast with Duski's icon. */
+export function toast(title: string, body: string, onClick: () => void): void {
+  const n = new Notification({ title, body, icon: nativeImage.createFromPath(path.join(__dirname, '..', 'resources', 'duski-icon.png')) });
+  toasts.add(n);
+  n.on('click', onClick);
+  n.on('close', () => toasts.delete(n));
+  n.show();
 }
 
 export function notify(title: string, content: string): void {

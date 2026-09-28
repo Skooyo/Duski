@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'" />
+  <title>Ask Duski</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="ask.css" />
+</head>
+<body class="popup ask">
+  <div id="card">
+    <div id="bar">
+      <span id="title">Ask Duski</span>
+      <span id="status" role="status"></span>
+      <button id="min" title="Hide while Duski works. A notification tells you when the answer is ready." aria-label="Minimize">─</button>
+      <button id="close" aria-label="Close">✕</button>
+    </div>
+    <div id="context"></div>
+    <div id="presets" role="group" aria-label="Quick questions"></div>
+    <form id="ask" autocomplete="off">
+      <input id="q" aria-label="Your question" placeholder="Ask anything about this…" />
+      <button id="go" type="submit" class="primary">Ask</button>
+    </form>
+    <div id="answer" hidden></div>
+    <div id="actions" hidden>
+      <button id="copy">Copy</button>
+      <button id="continue" class="primary">Continue in chat</button>
+    </div>
+  </div>
+  <script src="../dist/renderer/ask.js"></script>
+</body>
+</html>

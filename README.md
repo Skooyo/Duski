@@ -15,6 +15,9 @@ Duski runs in the system tray. Press **Ctrl+Shift+Space**, and a pie menu opens 
 | `1` | **Chat** | Opens a chat with a Claude agent that can use tools (files, shell, web). |
 | `2` | **Translate text** | Translates the text you selected to English, in a popup next to the cursor. |
 | `3` | **Translate area** | Lets you drag a box on the screen (like Lightshot) and translates the text in it. |
+| `4` | **Todo** | Opens a notebook over `D:\Duski\todo.md`. Type `[] ` for a to-do and `@` for a reminder. Duski shows a toast when a reminder is due. |
+| `5` | **Ask about text** | Asks Duski about the selected text: fix grammar, shorter, more formal, more casual, explain, or your own question. |
+| `6` | **Ask about area** | Drag a box and ask about it: what is this, explain this error, extract the text, summarize, or your own question. |
 
 Click a slice or press its number. Esc or a click outside the pie closes it.
 

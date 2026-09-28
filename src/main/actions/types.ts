@@ -1,4 +1,5 @@
 import type { ClaudeRun, RunOptions } from '../claude';
+import type { AskInput } from '../ask';
 import type { PopupHandle } from '../popup';
 
 export interface Point {
@@ -29,6 +30,7 @@ export interface ActionContext {
   showPopup(anchor: Point): PopupHandle;
   openChat(): void;
   openTodo(): void;
+  showAsk(anchor: Point, input: AskInput): void;
 }
 
 export interface PieAction {

@@ -1,6 +1,7 @@
 import { app, globalShortcut } from 'electron';
 import { execFile } from 'node:child_process';
 import { actions } from './actions';
+import { initAskIpc, showAsk, showAskWindow } from './ask';
 import type { ActionContext, Point } from './actions/types';
 import { getSelectedText } from './capture';
 import { initChatIpc, openChat } from './chat';
@@ -31,7 +32,7 @@ function start(): void {
   app.setAppUserModelId('com.duski.app'); // matches build.appId, so Windows groups balloons and taskbar under Duski
   const configError = loadConfig();
   const cfg = getConfig();
-  createTray([{ label: 'Open chat', click: openChat }, { label: 'Open todo', click: openTodo }, { type: 'separator' }]);
+  createTray([{ label: 'Open chat', click: openChat }, { label: 'Open todo', click: openTodo }, { label: 'Show Ask window', click: showAskWindow }, { type: 'separator' }]);
   if (configError) notify('Duski config', configError);
   const claudeMissing = () => notify('Claude Code not found', `"${cfg.claudePath} --version" failed. Install Claude Code, or run "claude" once to log in.`);
   try {
@@ -43,6 +44,7 @@ function start(): void {
   initPopupIpc();
   initChatIpc();
   initTodos();
+  initAskIpc();
   initPie(actions, (action, cursor) => {
     action.run(contextAt(cursor)).catch((err: unknown) => {
       showPopup(cursor).update('error', err instanceof Error ? err.message : String(err));
@@ -52,7 +54,7 @@ function start(): void {
 }
 
 function contextAt(cursor: Point): ActionContext {
-  return { cursor, getSelectedText, selectRegion, runClaude, showPopup, openChat, openTodo };
+  return { cursor, getSelectedText, selectRegion, runClaude, showPopup, openChat, openTodo, showAsk };
 }
 
 function registerHotkey(hotkey: string): void {
