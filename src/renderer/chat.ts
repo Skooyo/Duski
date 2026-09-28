@@ -117,6 +117,7 @@ function nearBottom(): boolean {
 
 function setBusy(b: boolean): void {
   busy = b;
+  log.classList.toggle('busy', b);
   input.disabled = b;
   sendBtn.textContent = b ? 'Stop' : 'Send';
   if (!b) input.focus();
