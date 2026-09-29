@@ -43,6 +43,7 @@ body.pie.open { background: rgba(0, 0, 0, 0.12); } /* non-zero alpha so clicks o
 .slice text { fill: var(--text); pointer-events: none; }
 .slice .icon { font-size: 22px; }
 .slice .label { font-size: 12px; fill: var(--muted); }
+.slice .num { font-weight: 700; }
 .slice:hover .label { fill: var(--text); }
 .hub { fill: var(--bg); stroke: var(--line); }
 @keyframes pie-in { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: none; } }

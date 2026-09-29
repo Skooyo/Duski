@@ -2,6 +2,8 @@
 
 <img src="resources/duski-icon.png" alt="Duski" width="128" />
 
+<sub>Dusk (Arknights) fan art by <a href="https://x.com/kuro_tofu">KuroTofu (@Kuro_Tofu)</a></sub>
+
 # Duski
 
 A radial pie menu for Windows. Press a hotkey to chat with Claude or translate anything on your screen.
@@ -97,7 +99,3 @@ On first start, Duski creates the agent home `D:\Duski\`:
 2. Add it to the list in `src/main/actions/index.ts`. The list order sets the number keys.
 
 The pie holds up to 8 actions.
-
-## Credits
-
-Duski artwork by @KURO_TOFU.
