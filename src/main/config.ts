@@ -83,5 +83,10 @@ export function getConfig(): Config {
 export function saveBounds(key: 'chatWindow' | 'todoWindow', bounds: WindowBounds): void {
   current = { ...current, [key]: bounds };
   // Never overwrite a file the user broke; they would lose their edits.
-  if (writable) fs.writeFileSync(CONFIG_PATH, JSON.stringify(current, null, 2) + '\n');
+  if (!writable) return;
+  // Reread the file and change only this key: the user may have edited other settings while Duski runs.
+  // A file that is invalid now throws here, so it is not overwritten either.
+  const raw = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  raw[key] = bounds;
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(raw, null, 2) + '\n');
 }
