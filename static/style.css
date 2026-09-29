@@ -54,6 +54,8 @@ body.popup { background: var(--panel); border: 1px solid var(--line); overflow: 
 #card { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; }
 #bar { display: flex; align-items: center; gap: 6px; -webkit-app-region: drag; }
 #bar button { -webkit-app-region: no-drag; padding: 2px 8px; }
+#bar button[hidden] { display: none; }
+#overlay[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); }
 #status { flex: 1; color: var(--muted); font-size: 12px; }
 #text { white-space: pre-wrap; overflow-y: auto; max-height: 330px; user-select: text; }
 [data-status='error'] #text { color: var(--error); }

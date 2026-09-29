@@ -8,16 +8,20 @@ export interface PopupHandle {
   update(status: PopupStatus, text: string): void;
   /** Resolves when the popup window closes (user or replacement). */
   closed: Promise<void>;
+  /** Shows the "Overlay" toggle in the popup bar; `onToggle` gets the new state. */
+  enableOverlayToggle(onToggle: (on: boolean) => void): void;
 }
 
 const WIDTH = 480;
 const MIN_HEIGHT = 60;
 const MAX_HEIGHT = 400;
 let current: BrowserWindow | null = null;
+const overlayToggles = new Map<number, (on: boolean) => void>(); // webContents id → handler
 
 export function initPopupIpc(): void {
   ipcMain.on('popup:close', (e) => BrowserWindow.fromWebContents(e.sender)?.destroy());
   ipcMain.on('popup:copy', (_e, text: string) => clipboard.writeText(text));
+  ipcMain.on('popup:overlay', (e, on: boolean) => overlayToggles.get(e.sender.id)?.(on));
   ipcMain.on('popup:resize', (e, height: number) => {
     const win = BrowserWindow.fromWebContents(e.sender);
     if (!win) return;
@@ -48,16 +52,20 @@ export function showPopup(anchor: Point): PopupHandle {
   current = win;
 
   let state: { status: PopupStatus; text: string } = { status: 'loading', text: '' };
+  const id = win.webContents.id;
   let ready = false;
+  let overlayToggle = false;
   win.webContents.once('did-finish-load', () => {
     ready = true;
     win.webContents.send('popup:update', state);
+    if (overlayToggle) win.webContents.send('popup:overlay-available');
     win.show();
   });
   void win.loadFile(path.join(__dirname, '..', 'static', 'popup.html'));
 
   const closed = new Promise<void>((resolve) =>
     win.on('closed', () => {
+      overlayToggles.delete(id);
       if (current === win) current = null;
       resolve();
     }),
@@ -69,6 +77,11 @@ export function showPopup(anchor: Point): PopupHandle {
       if (ready && !win.isDestroyed()) win.webContents.send('popup:update', state);
     },
     closed,
+    enableOverlayToggle(onToggle) {
+      overlayToggles.set(id, onToggle);
+      overlayToggle = true;
+      if (ready && !win.isDestroyed()) win.webContents.send('popup:overlay-available');
+    },
   };
 }
 

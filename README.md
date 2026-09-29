@@ -29,7 +29,7 @@ Duski is an Electron + TypeScript app. All AI work goes through the [Claude Code
 
 - **Chat** runs `claude -p` in the agent home folder `D:\Duski\` with full tool access. Replies stream in as markdown. The conversation continues until you click **New chat**.
 - **Translate text** sends Ctrl+C to the active app, reads the clipboard, and then restores your old clipboard.
-- **Translate area** takes a screenshot, crops your box to a PNG, and lets Claude read the image. No OCR library is needed.
+- **Translate area** takes a screenshot, crops your box to a PNG, and lets Claude read the image. No OCR library is needed. Claude returns each text block with its position, and Duski paints the English over the original text (like Google Lens), in colors sampled from the screenshot. The popup shows the same text. Closing the popup removes the overlay. `translateArea` needs a model with exact text positions: Sonnet works well, Haiku's boxes are too loose.
 
 ```
 src/main/        tray, hotkey, pie, popup, chat, region capture, claude runner
@@ -85,7 +85,7 @@ On first start, Duski creates the agent home `D:\Duski\`:
 {
   "hotkey": "Ctrl+Shift+Space",
   "claudePath": "claude",
-  "models": { "chat": "sonnet", "translate": "sonnet" },
+  "models": { "chat": "sonnet", "translate": "sonnet", "translateArea": "sonnet" },
   "translateTimeoutSec": 60
 }
 ```

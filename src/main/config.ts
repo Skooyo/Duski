@@ -16,7 +16,7 @@ export interface WindowBounds {
 export interface Config {
   hotkey: string;
   claudePath: string;
-  models: { chat: string; translate: string };
+  models: { chat: string; translate: string; translateArea: string };
   translateTimeoutSec: number;
   chatWindow: WindowBounds;
   todoWindow: WindowBounds;
@@ -25,7 +25,7 @@ export interface Config {
 export const DEFAULTS: Config = {
   hotkey: 'Ctrl+Shift+Space',
   claudePath: 'claude',
-  models: { chat: 'sonnet', translate: 'sonnet' },
+  models: { chat: 'sonnet', translate: 'sonnet', translateArea: 'sonnet' }, // translateArea needs exact text boxes for the overlay: Haiku's are too loose
   translateTimeoutSec: 60,
   chatWindow: { x: null, y: null, width: 480, height: 640 },
   todoWindow: { x: null, y: null, width: 440, height: 560 },
@@ -62,7 +62,11 @@ export function loadConfig(): string | null {
     current = {
       hotkey: pick(raw.hotkey, DEFAULTS.hotkey),
       claudePath: pick(raw.claudePath, DEFAULTS.claudePath),
-      models: { chat: pick(raw.models?.chat, DEFAULTS.models.chat), translate: pick(raw.models?.translate, DEFAULTS.models.translate) },
+      models: {
+        chat: pick(raw.models?.chat, DEFAULTS.models.chat),
+        translate: pick(raw.models?.translate, DEFAULTS.models.translate),
+        translateArea: pick(raw.models?.translateArea, DEFAULTS.models.translateArea),
+      },
       translateTimeoutSec: Math.max(5, pick(raw.translateTimeoutSec, DEFAULTS.translateTimeoutSec)),
       chatWindow: { ...DEFAULTS.chatWindow, ...raw.chatWindow },
       todoWindow: { ...DEFAULTS.todoWindow, ...raw.todoWindow },
