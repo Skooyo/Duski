@@ -8,6 +8,8 @@
 
 A radial pie menu for Windows. Press a hotkey to chat with Claude or translate anything on your screen.
 
+<img src="demo/duski-demo.gif" alt="Duski demo: the pie menu opens at the cursor, then Translate text, Translate area with the English painted over a sign, Chat, the Todo notebook, Ask about text, and Ask about area" width="720" />
+
 </div>
 
 Duski runs in the system tray. Press **Ctrl+Shift+Space**, and a pie menu opens at your cursor:
