@@ -56,6 +56,7 @@ export async function translate(
     prompt: o.prompt,
     args: [
       '--model', o.model ?? cfg.models.translate,
+      '--effort', 'medium', // user modelSettings do not load here (see --setting-sources)
       '--system-prompt', o.lens ? LENS_PROMPT : SYSTEM_PROMPT,
       '--tools', o.tools,
       ...(o.tools ? ['--allowedTools', o.tools] : []),
