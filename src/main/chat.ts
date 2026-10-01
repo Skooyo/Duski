@@ -1,8 +1,9 @@
 import { BrowserWindow, ipcMain, shell } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 import type { ChatEvent } from '../shared/chat-events';
 import { lastLines, REPLY_STYLE_ARGS, runClaude, type ClaudeEvent, type ClaudeRun } from './claude';
-import { AGENT_HOME, getConfig } from './config';
+import { AGENT_HOME, getConfig, TEMP_DIR } from './config';
 import { savedWindow } from './saved-window';
 
 let win: BrowserWindow | null = null;
@@ -12,7 +13,7 @@ let events: ChatEvent[] = [];
 
 export function initChatIpc(): void {
   ipcMain.on('chat:ready', (e) => e.sender.send('chat:replay', events, run !== null));
-  ipcMain.on('chat:send', (_e, text: string) => send(text));
+  ipcMain.on('chat:send', (_e, text: string, images: unknown) => send(String(text), Array.isArray(images) ? images : []));
   ipcMain.on('chat:stop', () => run?.cancel());
   ipcMain.on('chat:new', () => {
     run?.cancel();
@@ -47,15 +48,36 @@ export function openChat(): void {
   void w.loadFile(path.join(__dirname, '..', 'static', 'chat.html'));
 }
 
-function send(text: string): void {
+const IMAGE_URL = /^data:image\/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/=]+)$/;
+
+/** Writes pasted images to temp files that Claude can Read. Skips anything that is not a supported image data URL. */
+function saveImages(images: unknown[]): { urls: string[]; files: string[] } {
+  const urls: string[] = [];
+  const files: string[] = [];
+  fs.mkdirSync(TEMP_DIR, { recursive: true });
+  for (const url of images) {
+    const m = typeof url === 'string' ? IMAGE_URL.exec(url) : null;
+    if (!m) continue;
+    const file = path.join(TEMP_DIR, `chat-${Date.now()}-${files.length}.${m[1] === 'jpeg' ? 'jpg' : m[1]}`);
+    fs.writeFileSync(file, Buffer.from(m[2], 'base64'));
+    urls.push(url as string);
+    files.push(file);
+  }
+  return { urls, files };
+}
+
+function send(text: string, images: unknown[]): void {
   if (run) return;
   const cfg = getConfig();
-  emit({ kind: 'user', text });
+  const { urls, files } = saveImages(images);
+  if (!text && !files.length) return;
+  emit({ kind: 'user', text, images: urls });
+  const prompt = files.length ? `${text}\n\nI attached images. Read each one with the Read tool:\n${files.join('\n')}`.trim() : text;
   let resultError = false;
   const thisRun: ClaudeRun = runClaude({
     claudePath: cfg.claudePath,
     cwd: AGENT_HOME,
-    prompt: text,
+    prompt,
     args: ['--dangerously-skip-permissions', '--model', cfg.models.chat, ...REPLY_STYLE_ARGS, ...(sessionId ? ['--resume', sessionId] : [])],
     onEvent: (e) => {
       if (run !== thisRun) return; // a "New chat" happened; drop the old run's output
@@ -68,6 +90,8 @@ function send(text: string): void {
   });
   run = thisRun;
   void thisRun.done.then((r) => {
+    // The session transcript keeps the image after Claude reads it, so --resume does not need the files.
+    for (const f of files) fs.rmSync(f, { force: true });
     if (run !== thisRun) return;
     run = null;
     if (r.cancelled) emit({ kind: 'error', text: 'Stopped.' });

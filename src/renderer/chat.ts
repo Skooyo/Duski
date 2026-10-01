@@ -8,12 +8,14 @@ const log = document.getElementById('log') as HTMLElement;
 const input = document.getElementById('input') as HTMLTextAreaElement;
 const sendBtn = document.getElementById('send') as HTMLButtonElement;
 const pinBtn = document.getElementById('pin') as HTMLButtonElement;
+const attachments = document.getElementById('attachments') as HTMLElement;
 
 let busy = false;
 let segment: Segment | null = null; // assistant text block that receives the next deltas
 let reply: HTMLElement | null = null; // body of the current AI reply (next to its avatar)
 const dirty = new Set<Segment>();
 const tools = new Map<string, HTMLDetailsElement>();
+let pending: string[] = []; // image data URLs for the next message
 
 window.duski.on('chat:replay', (events: ChatEvent[], isBusy: boolean) => {
   log.replaceChildren();
@@ -33,7 +35,7 @@ function apply(e: ChatEvent): void {
     case 'user':
       segment = null;
       reply = null;
-      add('div', 'msg user', log).textContent = e.text;
+      add('div', 'msg user', log).append(...(e.images ?? []).map((url) => image(url, 'Attached image')), e.text);
       setBusy(true);
       break;
     case 'text':
@@ -123,11 +125,49 @@ function setBusy(b: boolean): void {
   if (!b) input.focus();
 }
 
+function image(src: string, alt: string): HTMLImageElement {
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = alt;
+  return img;
+}
+
+function attach(files: FileList | undefined): void {
+  for (const file of files ?? []) {
+    if (!/^image\/(png|jpeg|gif|webp)$/.test(file.type)) continue;
+    const reader = new FileReader();
+    reader.onload = () => {
+      pending.push(reader.result as string);
+      renderPending();
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function renderPending(): void {
+  attachments.hidden = pending.length === 0;
+  attachments.replaceChildren(
+    ...pending.map((url, i) => {
+      const b = document.createElement('button');
+      b.title = b.ariaLabel = `Remove image ${i + 1}`;
+      b.append(image(url, ''));
+      b.addEventListener('click', () => {
+        pending.splice(i, 1);
+        renderPending();
+        input.focus();
+      });
+      return b;
+    }),
+  );
+}
+
 function submit(): void {
   const text = input.value.trim();
-  if (!text || busy) return;
+  if ((!text && !pending.length) || busy) return;
   input.value = '';
-  window.duski.send('chat:send', text);
+  window.duski.send('chat:send', text, pending);
+  pending = [];
+  renderPending();
 }
 
 sendBtn.addEventListener('click', () => (busy ? window.duski.send('chat:stop') : submit()));
@@ -136,6 +176,12 @@ input.addEventListener('keydown', (e) => {
     e.preventDefault();
     submit();
   }
+});
+input.addEventListener('paste', (e) => attach(e.clipboardData?.files));
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => {
+  e.preventDefault();
+  attach(e.dataTransfer?.files);
 });
 document.getElementById('new')!.addEventListener('click', () => window.duski.send('chat:new'));
 pinBtn.addEventListener('click', () => {
