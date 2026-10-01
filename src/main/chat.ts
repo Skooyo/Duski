@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
 import type { ChatEvent } from '../shared/chat-events';
-import { lastLines, runClaude, type ClaudeEvent, type ClaudeRun } from './claude';
+import { lastLines, REPLY_STYLE_ARGS, runClaude, type ClaudeEvent, type ClaudeRun } from './claude';
 import { AGENT_HOME, getConfig } from './config';
 import { savedWindow } from './saved-window';
 
@@ -56,7 +56,7 @@ function send(text: string): void {
     claudePath: cfg.claudePath,
     cwd: AGENT_HOME,
     prompt: text,
-    args: ['--dangerously-skip-permissions', '--model', cfg.models.chat, ...(sessionId ? ['--resume', sessionId] : [])],
+    args: ['--dangerously-skip-permissions', '--model', cfg.models.chat, ...REPLY_STYLE_ARGS, ...(sessionId ? ['--resume', sessionId] : [])],
     onEvent: (e) => {
       if (run !== thisRun) return; // a "New chat" happened; drop the old run's output
       if (e.type === 'session') sessionId = e.id;

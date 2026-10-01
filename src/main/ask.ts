@@ -5,7 +5,7 @@ import type { AskEvent, AskInit } from '../shared/ask-events';
 import type { ChatEvent } from '../shared/chat-events';
 import type { Point, RegionImage } from './actions/types';
 import { continueInChat, toChatEvent } from './chat';
-import { lastLines, runClaude, type ClaudeRun } from './claude';
+import { lastLines, REPLY_STYLE_ARGS, runClaude, type ClaudeRun } from './claude';
 import { AGENT_HOME, getConfig } from './config';
 import { toast } from './tray';
 
@@ -127,7 +127,7 @@ function start(label: string, instruction: string): void {
     claudePath: cfg.claudePath,
     cwd: AGENT_HOME,
     prompt,
-    args: ['--dangerously-skip-permissions', '--model', cfg.models.chat],
+    args: ['--dangerously-skip-permissions', '--model', cfg.models.chat, ...REPLY_STYLE_ARGS],
     onEvent: (e) => {
       if (run !== thisRun) return; // replaced by a newer question, or the window closed
       if (e.type === 'session') session = e.id;
