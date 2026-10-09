@@ -16,9 +16,21 @@
   <main id="log" aria-live="polite"></main>
   <div id="attachments" hidden></div>
   <footer>
-    <textarea id="input" rows="2" aria-label="Message" placeholder="Message Duski (Enter to send, Shift+Enter for a new line, paste or drop images)"></textarea>
+    <textarea id="input" rows="2" aria-label="Message" placeholder="Message Duski (Enter to send, Shift+Enter for a new line, paste images or drop files)"></textarea>
     <button id="send">Send</button>
   </footer>
+  <dialog id="preview" aria-labelledby="preview-name">
+    <div class="preview-card">
+      <div class="preview-head">
+        <strong id="preview-name"></strong>
+        <span class="spacer"></span>
+        <button id="preview-reveal">Show in folder</button>
+        <button id="preview-close">Close</button>
+      </div>
+      <div id="preview-meta"></div>
+      <div id="preview-body"></div>
+    </div>
+  </dialog>
   <script src="../dist/renderer/chat.js"></script>
 </body>
 </html>

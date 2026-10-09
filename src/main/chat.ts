@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain, shell } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { ChatEvent } from '../shared/chat-events';
+import type { AttachedFile, ChatEvent, FilePreview } from '../shared/chat-events';
 import { lastLines, REPLY_STYLE_ARGS, runClaude, type ClaudeEvent, type ClaudeRun } from './claude';
 import { AGENT_HOME, getConfig, TEMP_DIR } from './config';
 import { savedWindow } from './saved-window';
@@ -13,7 +13,11 @@ let events: ChatEvent[] = [];
 
 export function initChatIpc(): void {
   ipcMain.on('chat:ready', (e) => e.sender.send('chat:replay', events, run !== null));
-  ipcMain.on('chat:send', (_e, text: string, images: unknown) => send(String(text), Array.isArray(images) ? images : []));
+  ipcMain.on('chat:send', (_e, text: string, images: unknown, files: unknown) =>
+    send(String(text), Array.isArray(images) ? images : [], Array.isArray(files) ? files : []),
+  );
+  ipcMain.handle('chat:preview', (_e, file: unknown) => preview(String(file)));
+  ipcMain.on('chat:reveal', (_e, file: unknown) => shell.showItemInFolder(String(file)));
   ipcMain.on('chat:stop', () => run?.cancel());
   ipcMain.on('chat:new', () => {
     run?.cancel();
@@ -66,13 +70,50 @@ function saveImages(images: unknown[]): { urls: string[]; files: string[] } {
   return { urls, files };
 }
 
-function send(text: string, images: unknown[]): void {
+/** Keeps dropped paths that still exist on disk. The renderer is not trusted to send real paths. */
+function checkFiles(files: unknown[]): AttachedFile[] {
+  return files.flatMap((f) => {
+    const p = (f as { path?: unknown } | null)?.path;
+    if (typeof p !== 'string' || !path.isAbsolute(p)) return [];
+    try {
+      const st = fs.statSync(p);
+      return [{ name: path.basename(p), path: p, size: st.isFile() ? st.size : 0 }];
+    } catch {
+      return []; // gone, or no access
+    }
+  });
+}
+
+const PREVIEW_BYTES = 256 * 1024;
+
+/** The start of a dropped file as text, for the preview dialog. A NUL byte in the first chunk means binary. */
+async function preview(file: string): Promise<FilePreview> {
+  const st = await fs.promises.stat(file).catch(() => null);
+  if (!st) return { kind: 'missing' };
+  if (st.isDirectory()) return { kind: 'folder' };
+  const fh = await fs.promises.open(file, 'r');
+  try {
+    const buf = Buffer.alloc(Math.min(st.size, PREVIEW_BYTES));
+    const { bytesRead } = await fh.read(buf, 0, buf.length, 0);
+    const head = buf.subarray(0, bytesRead);
+    if (head.includes(0)) return { kind: 'binary' };
+    return { kind: 'text', text: head.toString('utf8'), truncated: st.size > bytesRead };
+  } finally {
+    await fh.close();
+  }
+}
+
+function send(text: string, images: unknown[], dropped: unknown[]): void {
   if (run) return;
   const cfg = getConfig();
   const { urls, files } = saveImages(images);
-  if (!text && !files.length) return;
-  emit({ kind: 'user', text, images: urls });
-  const prompt = files.length ? `${text}\n\nI attached images. Read each one with the Read tool:\n${files.join('\n')}`.trim() : text;
+  const attached = checkFiles(dropped);
+  if (!text && !files.length && !attached.length) return;
+  emit({ kind: 'user', text, images: urls, files: attached });
+  let prompt = text;
+  if (files.length) prompt += `\n\nI attached images. Read each one with the Read tool:\n${files.join('\n')}`;
+  if (attached.length) prompt += `\n\nAttached files:\n${attached.map((f) => `- "${f.path}"`).join('\n')}`;
+  prompt = prompt.trim();
   let resultError = false;
   const thisRun: ClaudeRun = runClaude({
     claudePath: cfg.claudePath,
