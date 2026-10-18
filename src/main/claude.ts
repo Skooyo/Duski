@@ -1,4 +1,6 @@
 import { execFile, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export type ClaudeEvent =
   | { type: 'session'; id: string }
@@ -57,6 +59,29 @@ These rules apply to your own words only. When the user asks for text (a rewrite
 - Maximum 20 words in a procedural sentence, 25 words in a descriptive sentence. One instruction per sentence.
 - No hedging words that add no information ("perhaps", "might"). Keep a hedge that carries real uncertainty.`,
 ];
+
+/**
+ * spawn() without a shell runs only .exe files. The native installer gives claude.exe, but `npm i -g` gives a
+ * claude.cmd shim: spawn fails with ENOENT. A shell cannot help either: cmd.exe cannot pass the newlines in our args.
+ * The npm package ships bin/claude.exe next to the shim, so run that exe directly. Any other value is kept.
+ */
+export function resolveClaudePath(claudePath: string): string {
+  const shimTarget = (dir: string) => path.join(dir, 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe');
+  if (/\.cmd$/i.test(claudePath)) {
+    const exe = shimTarget(path.dirname(claudePath));
+    return fs.existsSync(exe) ? exe : claudePath;
+  }
+  if (path.extname(claudePath) || claudePath.includes('\\') || claudePath.includes('/')) return claudePath;
+  // A bare name: search PATH like Windows does, and stop at the first folder that has it.
+  for (const dir of (process.env.PATH ?? '').split(path.delimiter).filter(Boolean)) {
+    if (fs.existsSync(path.join(dir, `${claudePath}.exe`))) return claudePath; // spawn finds it
+    if (fs.existsSync(path.join(dir, `${claudePath}.cmd`))) {
+      const exe = shimTarget(dir);
+      return fs.existsSync(exe) ? exe : claudePath;
+    }
+  }
+  return claudePath;
+}
 
 export function runClaude(o: RunOptions): ClaudeRun {
   let child: ChildProcessWithoutNullStreams;

@@ -1,6 +1,6 @@
 import { app, Menu, nativeImage, Notification, shell, Tray } from 'electron';
 import path from 'node:path';
-import { AGENT_HOME } from './config';
+import { AGENT_HOME, changeAgentHome } from './config';
 
 let tray: Tray | null = null; // module-level so it is not garbage-collected
 
@@ -22,6 +22,7 @@ export function createTray(extra: Electron.MenuItemConstructorOptions[] = []): v
     Menu.buildFromTemplate([
       ...extra,
       { label: 'Open agent folder', click: () => void shell.openPath(AGENT_HOME) },
+      { label: 'Change agent folder…', click: () => void changeAgentHome() },
       // Only the installed .exe can start at login; in `npm start` this would register a bare electron.exe.
       ...(app.isPackaged
         ? [{

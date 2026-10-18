@@ -69,7 +69,7 @@ flowchart LR
     IN -->|selected text| CAP[capture.ts<br/>Ctrl+C, read clipboard]
     IN -->|screen box| REG[region.ts<br/>screenshot, crop PNG]
     IN -->|typed message| CHATW[Chat window]
-    IN -->|notebook| TODO[todo.ts<br/>D:\Duski\todo.md]
+    IN -->|notebook| TODO[todo.ts<br/>agent folder\todo.md]
 
     CAP --> CL
     REG --> CL
@@ -88,7 +88,7 @@ flowchart LR
 `src/main/main.ts` runs first. It does these steps:
 
 1. Make sure only one copy of Duski runs (`requestSingleInstanceLock`).
-2. Load `D:\Duski\config.json` (`config.ts`).
+2. Find the agent folder and load its `config.json` (`config.ts`).
 3. Create the tray icon (`tray.ts`).
 4. Run `claude --version`. If this fails, show a "Claude Code not found" message.
 5. Register the IPC listeners for each window type (`initChatIpc`, `initPopupIpc`, and so on).
@@ -178,7 +178,7 @@ Claude can read image files. "Translate area" and "Ask about area" do not use an
 | `1` | Chat | `actions/chat.ts` | Your message and images | Chat window, streamed markdown |
 | `2` | Translate text | `actions/translate-selection.ts` | Selected text | Popup at the cursor |
 | `3` | Translate area | `actions/translate-region.ts` | Screen box (PNG) | Popup and on-screen overlay |
-| `4` | Todo | `actions/todo.ts` | `D:\Duski\todo.md` | Notebook window and reminder toasts |
+| `4` | Todo | `actions/todo.ts` | `todo.md` in the agent folder | Notebook window and reminder toasts |
 | `5` | Ask about text | `actions/ask-text.ts` | Selected text and a question | Ask window |
 | `6` | Ask about area | `actions/ask-area.ts` | Screen box and a question | Ask window |
 
@@ -193,7 +193,7 @@ Claude can read image files. "Translate area" and "Ask about area" do not use an
 | `src/preload.ts` | The IPC bridge (`window.duski`) |
 | `static/` | HTML and CSS for each window |
 | `dist/` | Build output. Do not edit. |
-| `D:\Duski\` | Agent home: `config.json`, `CLAUDE.md`, `.mcp.json`, `todo.md` |
+| Agent folder | Set from the tray (default `D:\Duski\` if it exists, else `%USERPROFILE%\Duski\`): `config.json`, `CLAUDE.md`, `.mcp.json`, `todo.md` |
 
 Most windows follow one pattern. Three files with the same name work together:
 

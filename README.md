@@ -8,7 +8,7 @@
 
 A radial pie menu for Windows. Press a hotkey to chat with Claude or translate anything on your screen.
 
-<img src="demo/duski-demo.gif" alt="Duski demo: the pie menu opens at the cursor, then Translate text, Translate area with the English painted over a sign, Chat, the Todo notebook, Ask about text, and Ask about area" width="720" />
+<img src="demo/duski-demo.gif" alt="Duski demo: the pie menu opens at the cursor, then Translate text, Translate area with the English painted over a sign, Chat with two files dropped in and previewed, the Todo notebook, Ask about text, and Ask about area" width="720" />
 
 </div>
 
@@ -19,7 +19,7 @@ Duski runs in the system tray. Press **Ctrl+Shift+Space**, and a pie menu opens 
 | `1` | **Chat** | Opens a chat with a Claude agent that can use tools (files, shell, web). |
 | `2` | **Translate text** | Translates the text you selected to English, in a popup next to the cursor. |
 | `3` | **Translate area** | Lets you drag a box on the screen (like Lightshot) and translates the text in it. |
-| `4` | **Todo** | Opens a notebook over `D:\Duski\todo.md`. Type `[] ` for a to-do and `@` for a reminder. Duski shows a toast when a reminder is due. |
+| `4` | **Todo** | Opens a notebook over `todo.md` in the agent folder. Type `[] ` for a to-do and `@` for a reminder. Duski shows a toast when a reminder is due. |
 | `5` | **Ask about text** | Asks Duski about the selected text: fix grammar, shorter, more formal, more casual, explain, or your own question. |
 | `6` | **Ask about area** | Drag a box and ask about it: what is this, explain this error, extract the text, summarize, or your own question. |
 
@@ -29,7 +29,7 @@ Click a slice or press its number. Esc or a click outside the pie closes it.
 
 Duski is an Electron + TypeScript app. All AI work goes through the [Claude Code](https://docs.claude.com/en/docs/claude-code) CLI (`claude -p`). Duski uses your Claude subscription login, so it needs no API key.
 
-- **Chat** runs `claude -p` in the agent home folder `D:\Duski\` with full tool access. Paste or drop images, or drop any file, to attach it. Attachments show in a band above the message box. Click an attachment to preview it. Claude gets dropped files as paths, so it reads them from disk. Replies stream in as markdown. The conversation continues until you click **New chat**.
+- **Chat** runs `claude -p` in the agent folder with full tool access. Paste or drop images, or drop any file, to attach it. Attachments show in a band above the message box. Click an attachment to preview it. Claude gets dropped files as paths, so it reads them from disk. Replies stream in as markdown. The conversation continues until you click **New chat**.
 - **Chat** and **Ask** replies use an ADHD-friendly structure in ASD-STE100 Simplified Technical English. The prompt is `REPLY_STYLE_ARGS` in `src/main/claude.ts`. Rewrites, translations, and extracted text keep the tone you ask for.
 - **Translate text** sends Ctrl+C to the active app, reads the clipboard, and then restores your old clipboard.
 - **Translate area** takes a screenshot, crops your box to a PNG, and lets Claude read the image. No OCR library is needed. Claude returns each text block with its position, and Duski paints the English over the original text (like Google Lens), in colors sampled from the screenshot. The popup shows the same text. Closing the popup removes the overlay. `translateArea` needs a model with exact text positions: Sonnet works well, Haiku's boxes are too loose.
@@ -58,7 +58,7 @@ npm install
 npm run dist
 ```
 
-Run `release\Duski Setup 0.1.0.exe`. It installs for your user only, with no admin rights. It adds a Start menu shortcut and a desktop shortcut.
+Run `release\Duski Setup 0.1.0.exe`. It asks for the install folder, so you can install Duski on any drive. It installs for your user only, with no admin rights. It adds a Start menu shortcut and a desktop shortcut.
 
 > [!NOTE]
 > The installer has no code signature, so Windows SmartScreen shows a warning. Click **More info → Run anyway**.
@@ -73,7 +73,11 @@ npm start
 
 ## Configuration
 
-On first start, Duski creates the agent home `D:\Duski\`:
+On first start, Duski creates the agent folder. The default is `D:\Duski\` if it already exists, else `%USERPROFILE%\Duski\`.
+
+To use another folder or drive, right-click the tray icon and select **Change agent folder…**. Duski can copy your files to the new folder. The old folder stays as it is. Then Duski restarts.
+
+The agent folder holds:
 
 | File | Purpose |
 |---|---|
