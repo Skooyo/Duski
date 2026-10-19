@@ -1,6 +1,6 @@
 {
   "name": "duski",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
@@ -8,11 +8,14 @@
     "typecheck": "tsc --noEmit",
     "check": "node --no-warnings src/shared/todo.check.mts",
     "start": "node build.mjs && electron .",
-    "dist": "node build.mjs && electron-builder --win nsis"
+    "dist": "node build.mjs && electron-builder --win nsis --publish never",
+    "deploy": "node deploy.mjs",
+    "release": "npm version patch --no-git-tag-version && node build.mjs && electron-builder --win nsis --publish always"
   },
   "dependencies": {
     "@nut-tree-fork/nut-js": "^4.2.6",
     "dompurify": "^3.4.16",
+    "electron-updater": "^6.8.9",
     "marked": "^18.0.14"
   },
   "devDependencies": {
@@ -50,7 +53,14 @@
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Duski"
+      "shortcutName": "Duski",
+      "artifactName": "Duski-Setup-${version}.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Skooyo",
+      "repo": "Duski",
+      "releaseType": "release"
     }
   }
 }

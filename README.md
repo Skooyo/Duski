@@ -58,12 +58,24 @@ npm install
 npm run dist
 ```
 
-Run `release\Duski Setup 0.1.0.exe`. It asks for the install folder, so you can install Duski on any drive. It installs for your user only, with no admin rights. It adds a Start menu shortcut and a desktop shortcut.
+Run `release\Duski-Setup-0.1.0.exe`. It asks for the install folder, so you can install Duski on any drive. It installs for your user only, with no admin rights. It adds a Start menu shortcut and a desktop shortcut.
 
 > [!NOTE]
 > The installer has no code signature, so Windows SmartScreen shows a warning. Click **More info → Run anyway**.
 
 To start Duski with Windows, right-click the tray icon and select **Start with Windows**.
+
+### Updates
+
+Duski checks GitHub Releases at startup. A new version downloads in the background and installs when Duski quits. To check now, right-click the tray icon and select **Check for updates**.
+
+| Command | What it does |
+|---|---|
+| `npm run deploy` | Builds the installer and installs it silently on this PC, into the current install folder. Duski restarts. |
+| `npm run release` | Raises the patch version, builds, and publishes a GitHub release. Needs a GitHub token in `GH_TOKEN`. Commit `package.json` after. |
+
+> [!IMPORTANT]
+> Each update deletes the install folder. Keep the agent folder outside it (see [Configuration](#configuration)).
 
 ### Run from source
 

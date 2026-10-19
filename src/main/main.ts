@@ -1,5 +1,6 @@
 import { app, globalShortcut } from 'electron';
 import { execFile } from 'node:child_process';
+import { autoUpdater } from 'electron-updater';
 import { actions } from './actions';
 import { initAskIpc, showAsk, showAskWindow } from './ask';
 import type { ActionContext, Point } from './actions/types';
@@ -35,10 +36,12 @@ function start(): void {
   repairLoginItem();
   const configError = loadConfig();
   const cfg = getConfig();
-  createTray([{ label: 'Open chat', click: openChat }, { label: 'Open todo', click: openTodo }, { label: 'Show Ask window', click: showAskWindow }, { type: 'separator' }]);
+  createTray([{ label: 'Open chat', click: openChat }, { label: 'Open todo', click: openTodo }, { label: 'Show Ask window', click: showAskWindow }, { label: 'Check for updates', click: () => checkForUpdates(true) }, { type: 'separator' }]);
   if (configError) notify('Duski config', configError);
   const homeWarning = agentHomeWarning();
   if (homeWarning) toast('Duski agent folder', homeWarning, () => void changeAgentHome());
+  autoUpdater.on('error', () => {}); // an 'error' event without a listener crashes the app; checkForUpdates reports errors
+  checkForUpdates(false);
   const claudeMissing = () => notify('Claude Code not found', `"${cfg.claudePath} --version" failed. Install Claude Code, or run "claude" once to log in.`);
   try {
     execFile(cfg.claudePath, ['--version'], { timeout: 15_000, windowsHide: true }, (err) => err && claudeMissing());
@@ -75,6 +78,18 @@ function repairLoginItem(): void {
       app.setLoginItemSettings({ openAtLogin: true, enabled: !flag || parseInt(flag[1], 16) % 2 === 0 });
     });
   });
+}
+
+/**
+ * Looks for a newer GitHub release (see build.publish). A new version downloads in the background and installs when
+ * Duski quits; Windows shows a toast when it is ready. `manual` (tray item) also reports "no update" and errors.
+ */
+function checkForUpdates(manual: boolean): void {
+  if (!app.isPackaged) return void (manual && notify('Duski updates', 'Updates work only in the installed app.'));
+  autoUpdater.checkForUpdatesAndNotify().then(
+    (r) => manual && !r?.isUpdateAvailable && notify('Duski updates', `Duski ${app.getVersion()} is the latest version.`),
+    (err: Error) => manual && notify('Duski updates', `Update check failed: ${err.message}`),
+  );
 }
 
 function contextAt(cursor: Point): ActionContext {

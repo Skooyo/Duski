@@ -16,7 +16,8 @@ function resolveHome(): string {
   } catch {
     // no saved folder yet
   }
-  return fs.existsSync(LEGACY_HOME) ? LEGACY_HOME : path.join(os.homedir(), 'Duski');
+  // Never inside the install folder: every update runs the uninstaller, which deletes that folder.
+  return fs.existsSync(LEGACY_HOME) && !inInstallFolder(LEGACY_HOME) ? LEGACY_HOME : path.join(os.homedir(), 'Duski');
 }
 
 export const AGENT_HOME = resolveHome();
