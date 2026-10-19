@@ -47,6 +47,10 @@ function showPie(): void {
     items: items.map(({ id, label, icon }) => ({ id, label, icon })),
   });
   win.showInactive();
+  // showInactive() keeps the old z-position. Another app (e.g. Photos) can push the hidden pie below normal windows,
+  // and it then opens behind them, blank. Set topmost again on every open; false first, so Electron does not skip it.
+  win.setAlwaysOnTop(false);
+  win.setAlwaysOnTop(true, 'screen-saver');
   // The pie has no focus, so its keys must be global while it is open.
   KEYS.forEach((key, i) => globalShortcut.register(key, () => (i === 0 ? hidePie() : pickAt(i - 1))));
 }
