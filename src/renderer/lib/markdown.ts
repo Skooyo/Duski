@@ -108,7 +108,7 @@ function loadMermaid(): Promise<any> {
       const m = (globalThis as any).mermaid;
       const dark = matchMedia('(prefers-color-scheme: dark)').matches;
       // htmlLabels off: labels become SVG text, so DOMPurify keeps them and the viewer scales them.
-      m.initialize({ startOnLoad: false, securityLevel: 'strict', suppressErrorRendering: true, theme: dark ? 'dark' : 'default', htmlLabels: false, flowchart: { htmlLabels: false }, fontFamily: 'Segoe UI, sans-serif' });
+      m.initialize({ startOnLoad: false, securityLevel: 'strict', suppressErrorRendering: true, theme: dark ? 'redux-dark-color' : 'redux-color', look: 'neo', htmlLabels: false, flowchart: { htmlLabels: false }, fontFamily: 'Segoe UI, sans-serif' });
       resolve(m);
     };
     s.onerror = () => reject(new Error('Mermaid did not load'));

@@ -17,6 +17,7 @@ When you ask Duski to explain something, the source is usually too technical. Du
 | Visual kind | ` ```mermaid ` for structure; ` ```svg ` for shapes Mermaid cannot draw. Code goes in the reply, not in files. |
 | Rendering | Ask and Chat share one renderer (`src/renderer/lib/markdown.ts`). Mermaid loads on first use, `securityLevel: 'strict'`, theme follows the window. SVG and Mermaid output go through DOMPurify. |
 | States | While a block streams: "Drawing diagram…". On a parse error: "Diagram could not render" plus the source in a collapsed block. |
+| Diagram style | Mermaid `redux-dark-color` theme (`redux-color` in light mode) with the `neo` look. Prompt rules: labels max 5 words, flowcharts top to bottom (LR only for 4 nodes or fewer), labeled subgraphs for each part, the key node gets an amber border (`classDef key`). Chosen 2026-11-04 from a side-by-side comparison. |
 | Copy | Copies the raw markdown, as before. |
 | Enlarge | Click a diagram to open the Duski viewer window: 80% of the screen, centered, always on top. Scroll zooms at the cursor, drag pans, double-click resets. ─ minimizes it to the taskbar (the taskbar button or a click on any diagram restores it). Esc or ✕ closes. A new diagram replaces the old one. |
 | Toggle | None. |

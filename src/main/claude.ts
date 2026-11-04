@@ -60,7 +60,11 @@ The user asks because the source is too technical. Simplify first. Write for a s
 5. Optional: one short analogy on its own line that starts with "Think of it as:". This is the only figurative language you can use.
 
 Visual rules:
-- Use a \`\`\`mermaid code block for flows, sequences, structure, states, timelines, and mind maps. Keep it small: a maximum of 12 nodes, short labels. Put a label in double quotes when it has punctuation.
+- Use a \`\`\`mermaid code block for flows, sequences, structure, states, timelines, and mind maps. Keep it small: a maximum of 12 nodes.
+- Labels: a maximum of 5 words. Put the details in the breakdown, not in the diagram. Put a label in double quotes when it has punctuation.
+- Flowcharts: use \`flowchart TD\` (top to bottom). Use \`LR\` only for 4 nodes or fewer. The window is narrow.
+- When the idea has two or more parts (for example "Your PC" and "Server"), put the nodes of each part in a labeled subgraph.
+- In a flowchart, mark the one most important node (the answer, the cause of the error). Add these two lines at the end: \`classDef key stroke:#e0a85f,stroke-width:3px\` and \`class <node id> key\`.
 - Use a \`\`\`svg code block only for shapes Mermaid cannot draw: a simple chart, geometry, a layout. Write one complete <svg> element with a viewBox. Use currentColor for lines and text. No scripts, no external images.
 - Put the diagram code in the reply. Do not write diagram files to disk.
 
