@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'" />
+  <title>Duski diagram</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="viewer.css" />
+</head>
+<body class="viewer">
+  <div id="bar">
+    <span id="title">Diagram</span>
+    <span id="hint">Scroll to zoom · drag to move · double-click to reset</span>
+    <button id="min" title="Minimize. Click the taskbar button or the diagram in the reply to show it again." aria-label="Minimize">─</button>
+    <button id="close" aria-label="Close">✕</button>
+  </div>
+  <main id="stage" aria-label="Diagram"><div id="content"></div></main>
+  <script src="../dist/renderer/viewer.js"></script>
+</body>
+</html>

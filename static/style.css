@@ -65,3 +65,15 @@ body.popup { background: var(--panel); border: 1px solid var(--line); overflow: 
 }
 [data-status='loading'] .spinner, [data-status='streaming'] .spinner { display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Diagrams in Ask and Chat replies (src/renderer/lib/markdown.ts) */
+.diagram { margin: 8px 0; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); cursor: zoom-in; }
+.diagram:hover { border-color: var(--accent); }
+.diagram:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.diagram svg { display: block; margin: 0 auto; max-width: 100%; max-height: 360px; height: auto; }
+.diagram.pending { color: var(--muted); font-size: 12px; cursor: default; }
+.diagram.failed { cursor: default; }
+.diagram.failed:hover { border-color: var(--line); }
+.diagram .note { margin: 0 0 4px; color: var(--muted); font-size: 12px; }
+.diagram summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+.diagram pre { margin: 4px 0 0; white-space: pre-wrap; font: 12px/1.4 'Cascadia Code', Consolas, monospace; }

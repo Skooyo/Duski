@@ -13,6 +13,7 @@ import { initPopupIpc, showPopup } from './popup';
 import { selectRegion } from './region';
 import { initTodos, openTodo } from './todo';
 import { createTray, notify, toast } from './tray';
+import { initViewerIpc } from './viewer';
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -53,6 +54,7 @@ function start(): void {
   initChatIpc();
   initTodos();
   initAskIpc();
+  initViewerIpc();
   initPie(actions, (action, cursor) => {
     action.run(contextAt(cursor)).catch((err: unknown) => {
       showPopup(cursor).update('error', err instanceof Error ? err.message : String(err));

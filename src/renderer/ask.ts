@@ -1,6 +1,5 @@
-import DOMPurify from 'dompurify';
-import { marked } from 'marked';
 import type { AskEvent, AskInit } from '../shared/ask-events';
+import { onDiagramChange, renderMarkdown } from './lib/markdown';
 
 const context = document.getElementById('context') as HTMLDivElement;
 const presets = document.getElementById('presets') as HTMLDivElement;
@@ -54,6 +53,7 @@ window.duski.on('ask:event', (e: AskEvent) => {
   }
 });
 window.duski.send('ask:ready');
+onDiagramChange(resize);
 
 // The submit button makes Enter work; while busy it is the Stop button.
 form.addEventListener('submit', (e) => {
@@ -82,8 +82,7 @@ function ask(label: string, instruction: string): void {
 
 function renderAnswer(): void {
   queued = false;
-  // Claude output can contain HTML; sanitize before it touches the DOM.
-  answer.innerHTML = DOMPurify.sanitize(marked.parse(raw, { async: false, breaks: true }) as string);
+  renderMarkdown(answer, raw, true);
   resize();
 }
 

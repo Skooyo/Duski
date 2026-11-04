@@ -11,3 +11,5 @@ await Promise.all([
   build({ ...common, entryPoints: ['src/preload.ts'], outfile: 'dist/preload.js', platform: 'node', format: 'cjs', external: ['electron'] }),
   renderers.length && build({ ...common, entryPoints: renderers, outdir: 'dist/renderer', platform: 'browser', format: 'iife' }),
 ]);
+// Mermaid is ~5 MB: renderers load the prebuilt file only when a reply has a diagram, so it stays out of the bundles.
+fs.copyFileSync('node_modules/mermaid/dist/mermaid.min.js', 'dist/renderer/mermaid.min.js');

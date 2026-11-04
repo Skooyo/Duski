@@ -1,6 +1,5 @@
-import DOMPurify from 'dompurify';
-import { marked } from 'marked';
 import type { AttachedFile, ChatEvent, FilePreview } from '../shared/chat-events';
+import { onDiagramChange, renderMarkdown } from './lib/markdown';
 
 type Segment = { el: HTMLElement; raw: string };
 /** An item in the attachments band. Images travel as data URLs; other files travel as paths. */
@@ -36,6 +35,8 @@ window.duski.on('chat:replay', (events: ChatEvent[], isBusy: boolean) => {
 });
 window.duski.on('chat:event', (e: ChatEvent) => apply(e));
 window.duski.send('chat:ready');
+// A finished diagram is taller than its placeholder; keep the newest reply in view.
+onDiagramChange(() => (busy || log.scrollHeight - log.scrollTop < 2 * log.clientHeight) && (log.scrollTop = log.scrollHeight));
 
 function apply(e: ChatEvent): void {
   const stick = nearBottom();
@@ -96,8 +97,7 @@ function queueRender(s: Segment): void {
 
 function renderDirty(): void {
   const stick = nearBottom();
-  // Claude output can contain HTML; sanitize before it touches the DOM.
-  for (const s of dirty) s.el.innerHTML = DOMPurify.sanitize(marked.parse(s.raw, { async: false }) as string);
+  for (const s of dirty) renderMarkdown(s.el, s.raw);
   dirty.clear();
   if (stick) log.scrollTop = log.scrollHeight;
 }

@@ -23,6 +23,7 @@
     "electron": "^44.4.5",
     "electron-builder": "^26.15.3",
     "esbuild": "^0.28.2",
+    "mermaid": "^12.3.0",
     "typescript": "^7.0.2"
   },
   "allowScripts": {
