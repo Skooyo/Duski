@@ -3,3 +3,4 @@ dist/
 release/
 /demo/*
 !/demo/duski-demo.gif
+/showcase/

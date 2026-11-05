@@ -358,8 +358,11 @@ function onClick(e: MouseEvent): void {
 
 // ---- reminder menu (typed @ or the clock button) ----
 
+let menuAnchor = new DOMRect(); // what the menu opened next to; the wider date picker is placed again from it
+
 function openMenu(r: TodoRow, anchor: DOMRect, at: number | null): void {
   menuFor = { id: r.id, at };
+  menuAnchor = anchor;
   const now = new Date();
   const day = (plus: number, hour: number) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + plus, hour, 0);
   const inHour = new Date(Math.ceil((now.getTime() + 3_600_000) / 60_000) * 60_000); // rounded up: never fires early
@@ -421,6 +424,7 @@ function showPicker(r: TodoRow): void {
     if (input.value) choose(input.value.replace('T', ' '));
   });
   menu.replaceChildren(form);
+  positionMenu(menuAnchor);
   input.focus();
 }
 
