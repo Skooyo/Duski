@@ -1,4 +1,4 @@
-import { formatBlock, parseBlock, stamp, toDate, type Block, type TodoBlock } from '../shared/todo';
+import { formatBlock, parseBlock, parseWhen, stamp, toDate, type Block, type TodoBlock } from '../shared/todo';
 
 // The whole of todo.md, one block per line, edited like a Notion page. Each block is its own
 // contenteditable; `rows` is the truth and the DOM is rebuilt from it after every structural change.
@@ -23,7 +23,7 @@ let base: string | null = null; // the file as this window last loaded or saved 
 let nextId = 1;
 let saveTimer: number | undefined;
 let menuFor: { id: number; at: number | null } | null = null; // `at`: offset of a typed '@' that the choice replaces
-let active = 0;
+let active = 0; // highlighted option in the reminder panel
 
 window.duski.on('todo:file', (text: string) => {
   if (text === base) return; // our own save
@@ -152,7 +152,10 @@ function blockEl(r: Row): HTMLElement {
 function fillDue(b: HTMLElement, r: TodoBlock): void {
   const d = toDate(r.due!)!;
   const overdue = !r.done && d.getTime() <= Date.now();
+  const days = Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / DAY_MS);
   b.classList.toggle('overdue', overdue);
+  b.classList.toggle('today', !overdue && !r.done && days === 0);
+  b.classList.toggle('tomorrow', !overdue && !r.done && days === 1);
   b.textContent = (overdue ? 'Overdue, ' : '') + whenLabel(d, overdue);
   b.setAttribute('aria-label', `Reminder: ${b.textContent}. Change`);
 }
@@ -356,76 +359,277 @@ function onClick(e: MouseEvent): void {
   render({ id: blank.id, offset: 0 });
 }
 
-// ---- reminder menu (typed @ or the clock button) ----
+// ---- reminder panel (typed @ or the clock button) ----
+// A typed field, presets with their day, the next 3 weeks, time chips and an hour picker.
+// Every pick sets the reminder and closes the panel. Spec: .scratch/duski-todo/spec.md
 
-let menuAnchor = new DOMRect(); // what the menu opened next to; the wider date picker is placed again from it
+type Option = { icon: string; color?: string; name: string; when?: string; due?: Date | null; kind?: 'typed' | 'bad' | 'remove' };
+
+const ICON: Record<string, string> = {
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  cup: '<path d="M4 8h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 9h2a3 3 0 0 1 0 6h-2"/><path d="M8 2v3M12 2v3"/>',
+  next: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  enter: '<path d="M9 10l-5 5 5 5"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>',
+  x: '<path d="M6 6l12 12M18 6 6 18"/>',
+};
+const icon = (name: string, color = 'currentColor') =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name]}</svg>`;
+
+const query = Object.assign(document.createElement('input'), { id: 'when', placeholder: 'Type a date: fri 3pm, in 2h, 20 nov…', autocomplete: 'off' });
+const list = el('div', 'r-list');
+const calSec = el('div', 'r-section');
+const timeSec = el('div', 'r-section');
+const foot = el('div', 'r-foot');
+{
+  const search = el('div', 'r-search');
+  search.innerHTML = icon('search');
+  query.setAttribute('role', 'combobox');
+  query.setAttribute('aria-label', 'Reminder date and time');
+  query.setAttribute('aria-controls', 'r-list');
+  query.setAttribute('aria-expanded', 'true');
+  list.id = 'r-list';
+  list.setAttribute('role', 'listbox');
+  search.append(query);
+  menu.append(search, list, calSec, timeSec, foot);
+  query.addEventListener('input', () => {
+    active = 0;
+    paintList();
+    positionMenu(menuAnchor);
+  });
+}
+
+let menuAnchor = new DOMRect(); // what the panel opened next to; it is placed again when its height changes
+let presets: Option[] = [];
+let now = new Date(); // the panel's "now": set when it opens, so its days are never stale
+let pickDay: Date | null = null; // a day clicked in the calendar
+let otherTime = false; // the hour picker is open
+let pm = false;
+let pickHour: number | null = null; // 1..12 in the hour picker
+
+function el(tag: string, cls: string, text?: string): HTMLElement {
+  const node = document.createElement(tag);
+  node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+const today = () => new Date(now.getFullYear(), now.getMonth(), now.getDate());
+const dayAt = (plus: number, hour = 0) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + plus, hour);
+const hourLabel = (d: Date) => d.toLocaleTimeString([], d.getMinutes() ? { hour: 'numeric', minute: '2-digit' } : { hour: 'numeric' });
+const dayLabel = (d: Date) => d.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+/** A time on the picked day. With no day picked: its next occurrence, today or tomorrow. */
+function timeAt(hour: number, min: number): Date {
+  const d = new Date(pickDay ?? today());
+  d.setHours(hour, min, 0, 0);
+  if (!pickDay && d <= now) d.setDate(d.getDate() + 1);
+  return d;
+}
 
 function openMenu(r: TodoRow, anchor: DOMRect, at: number | null): void {
   menuFor = { id: r.id, at };
   menuAnchor = anchor;
-  const now = new Date();
-  const day = (plus: number, hour: number) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + plus, hour, 0);
+  now = new Date();
+  const toSat = (6 - now.getDay() + 7) % 7 || 7;
+  const toMon = (8 - now.getDay()) % 7 || 7;
   const inHour = new Date(Math.ceil((now.getTime() + 3_600_000) / 60_000) * 60_000); // rounded up: never fires early
-  const items: [string, () => void, string?][] = [
-    ['In 1 hour', () => choose(stamp(inHour))],
-    ...(now.getHours() < 20 ? [[`Tonight ${clock(day(0, 20))}`, () => choose(stamp(day(0, 20)))] as [string, () => void]] : []),
-    [`Tomorrow ${clock(day(1, 9))}`, () => choose(stamp(day(1, 9)))],
-    ['Pick a date and time…', () => showPicker(r)],
-    ...(r.due ? [['Remove reminder', () => choose(null), 'remove'] as [string, () => void, string]] : []),
+  presets = [
+    { icon: 'clock', color: '#5f7ae0', name: 'In 1 hour', due: inHour },
+    ...(now.getHours() < 20 ? [{ icon: 'moon', color: '#a78bfa', name: 'Tonight', due: dayAt(0, 20) }] : []),
+    { icon: 'sun', color: '#e0a85f', name: 'Tomorrow', due: dayAt(1, 9) },
+    { icon: 'cup', color: '#4fb3a9', name: 'This weekend', due: dayAt(toSat, 10) },
+    { icon: 'next', color: '#c084fc', name: 'Next week', due: dayAt(toMon, 9) },
   ];
-  menu.replaceChildren(
-    ...items.map(([label, run, cls], i) => {
-      const b = Object.assign(document.createElement('button'), { type: 'button', textContent: label, id: `opt${i}`, tabIndex: -1 });
+  for (const p of presets) p.when = p === presets[0] ? hourLabel(p.due!) : `${p.due!.toLocaleDateString([], { weekday: 'short' })} ${hourLabel(p.due!)}`;
+  const due = r.due ? toDate(r.due) : null;
+  pickDay = due && due > now ? new Date(due.getFullYear(), due.getMonth(), due.getDate()) : null;
+  otherTime = false;
+  pm = now.getHours() >= 11;
+  pickHour = null;
+  query.value = '';
+  active = 0;
+  paintList();
+  paintCal();
+  paintTimes();
+  paintFoot();
+  menu.hidden = false;
+  positionMenu(anchor);
+  if (at === null) query.focus(); // opened by a button: type right away. After a typed '@' the caret stays in the text.
+}
+
+function options(): Option[] {
+  const q = query.value.trim().toLowerCase();
+  const r = rows.find((x) => x.id === menuFor?.id);
+  if (!q) return presets;
+  if (/^(no( due)? date|none|remove|clear)$/.test(q)) return r?.kind === 'todo' && r.due ? [{ icon: 'x', color: 'var(--error)', name: 'Remove reminder', due: null, kind: 'remove' }, ...presets] : presets;
+  const d = parseWhen(q, now);
+  if (!d) return [{ icon: 'search', name: 'Not understood. Try "fri 3pm".', kind: 'bad' }, ...presets];
+  if (d <= now) return [{ icon: 'search', name: `${dayLabel(d)}, ${hourLabel(d)} has passed.`, kind: 'bad' }, ...presets];
+  return [{ icon: 'enter', color: 'var(--accent)', name: dayLabel(d), when: hourLabel(d), due: d, kind: 'typed' }, ...presets];
+}
+
+function pickOption(o: Option | undefined): void {
+  if (o && o.kind !== 'bad') choose(o.due ? stamp(o.due) : null);
+}
+
+function paintList(): void {
+  const opts = options();
+  active = Math.min(active, opts.length - 1);
+  list.replaceChildren(
+    ...opts.map((o, i) => {
+      const b = el('button', `r-row${o.kind ? ` ${o.kind}` : ''}${i === active ? ' active' : ''}`) as HTMLButtonElement;
+      b.type = 'button';
+      b.tabIndex = -1;
+      b.id = `opt${i}`;
       b.setAttribute('role', 'option');
-      if (cls) b.classList.add(cls);
-      b.addEventListener('click', run);
-      b.addEventListener('mouseenter', () => setActive(i));
+      b.setAttribute('aria-selected', String(i === active));
+      b.innerHTML = icon(o.icon, o.color);
+      b.append(el('span', 'name', o.name));
+      if (o.when) b.append(el('span', 'when', o.when));
+      if (o.kind === 'typed') b.append(el('kbd', '', 'Enter'));
+      // Only a real move: Chromium also fires mousemove when the list repaints under a still pointer.
+      b.addEventListener('mousemove', (e) => (e.movementX || e.movementY) && active !== i && setActive(i));
+      b.addEventListener('click', () => pickOption(o));
       return b;
     }),
   );
-  menu.hidden = false;
-  positionMenu(anchor);
-  setActive(0);
-  if (at === null) options()[0].focus(); // opened by a button: keyboard focus moves into the menu
-}
-
-function options(): HTMLButtonElement[] {
-  return [...menu.querySelectorAll<HTMLButtonElement>('[role=option]')];
+  query.setAttribute('aria-activedescendant', `opt${active}`);
 }
 
 function setActive(i: number): void {
   active = i;
-  options().forEach((b, j) => {
-    b.classList.toggle('active', j === i);
-    b.setAttribute('aria-selected', String(j === i));
-  });
-  if (menu.contains(document.activeElement)) options()[i]?.focus();
+  paintList();
 }
 
+/** This week and the next two, from Monday. Past days are disabled. */
+function paintCal(): void {
+  const start = today();
+  const monday = dayAt(-((now.getDay() + 6) % 7));
+  const cells = Array.from({ length: 21 }, (_, n) => new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + n));
+  const months = [...new Set(cells.filter((d) => d >= start).map((d) => d.toLocaleDateString([], { month: 'long' })))].join(' – ');
+  const head = el('div', 'r-head');
+  head.append(el('span', '', 'Pick a day'), el('span', '', months));
+  const cal = el('div', 'r-cal');
+  for (const w of ['M', 'T', 'W', 'T', 'F', 'S', 'S']) cal.append(el('span', 'wd', w));
+  for (const d of cells) {
+    const b = el('button', '', String(d.getDate())) as HTMLButtonElement;
+    b.type = 'button';
+    if (d.getDate() === 1) b.append(el('span', 'mo', d.toLocaleDateString([], { month: 'short' })));
+    b.disabled = d < start;
+    b.classList.toggle('today', +d === +start);
+    b.classList.toggle('weekend', d.getDay() % 6 === 0);
+    b.classList.toggle('on', !!pickDay && +d === +pickDay);
+    b.setAttribute('aria-label', d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' }));
+    b.setAttribute('aria-pressed', String(!!pickDay && +d === +pickDay));
+    b.addEventListener('click', () => {
+      pickDay = d;
+      paintCal();
+      paintTimes();
+      paintFoot();
+      (calSec.querySelector('.on') as HTMLElement | null)?.focus(); // the old button is gone; keep keyboard focus here
+    });
+    cal.append(b);
+  }
+  calSec.replaceChildren(head, cal);
+}
+
+function paintTimes(): void {
+  const head = el('div', 'r-head');
+  const chip = (cls: string, text: string, run: () => void) => {
+    const b = el('button', cls, text) as HTMLButtonElement;
+    b.type = 'button';
+    b.addEventListener('click', run);
+    return b;
+  };
+  if (!otherTime) {
+    head.append(el('span', '', pickDay ? 'Then a time' : 'Time'), el('span', '', pickDay ? pickDay.toLocaleDateString([], { weekday: 'long' }) : 'the next one'));
+    const row = el('div', 'r-times');
+    for (const h of [9, 12, 15, 18, 20]) {
+      const d = timeAt(h, 0);
+      const b = chip(pickDay ? 'ready' : '', hourLabel(d), () => choose(stamp(d)));
+      b.title = whenLabel(d, false);
+      b.disabled = d <= now;
+      row.append(b);
+    }
+    row.append(chip('more', 'Other time…', () => setOtherTime(true)));
+    return timeSec.replaceChildren(head, row);
+  }
+  // Hour picker: AM/PM, a 12-hour grid, then the minutes. The minute click sets the reminder.
+  head.append(el('span', '', pickHour === null ? 'Pick an hour' : 'Then the minutes'), chip('back', '‹ Back', () => setOtherTime(false)));
+  const to24 = (h: number) => (h % 12) + (pm ? 12 : 0);
+  const ampm = el('div', 'r-ampm');
+  for (const [label, isPm] of [['AM', false], ['PM', true]] as const) {
+    const b = chip(pm === isPm ? 'on' : '', label, () => {
+      pm = isPm;
+      paintTimes();
+      paintFoot();
+    });
+    b.setAttribute('aria-pressed', String(pm === isPm));
+    ampm.append(b);
+  }
+  const hours = el('div', 'r-hours');
+  for (const h of [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]) {
+    const b = chip(pickHour === h ? 'on' : '', String(h), () => {
+      pickHour = h;
+      paintTimes();
+      paintFoot();
+      (timeSec.querySelector('.r-mins button:not(:disabled)') as HTMLElement | null)?.focus();
+    });
+    b.setAttribute('aria-label', `${h} ${pm ? 'PM' : 'AM'}`);
+    b.disabled = !!pickDay && timeAt(to24(h), 45) <= now; // all four minutes of this hour have passed on the picked day
+    hours.append(b);
+  }
+  const mins = el('div', 'r-mins');
+  for (const m of [0, 15, 30, 45]) {
+    const d = pickHour === null ? null : timeAt(to24(pickHour), m);
+    const b = chip(d ? 'ready' : '', `:${String(m).padStart(2, '0')}`, () => d && choose(stamp(d)));
+    b.disabled = !d || d <= now;
+    if (d) b.title = whenLabel(d, false);
+    mins.append(b);
+  }
+  const grid = el('div', 'r-clock');
+  grid.append(ampm, hours, mins);
+  timeSec.replaceChildren(head, grid);
+}
+
+function setOtherTime(on: boolean): void {
+  otherTime = on;
+  pickHour = null;
+  paintTimes();
+  paintFoot();
+  positionMenu(menuAnchor);
+  (timeSec.querySelector(on ? '.r-ampm .on' : '.more') as HTMLElement | null)?.focus();
+}
+
+function paintFoot(): void {
+  const r = rows.find((x) => x.id === menuFor?.id);
+  const due = r?.kind === 'todo' && r.due ? toDate(r.due) : null;
+  const text = el('span', 'grow');
+  const b = el('b', '');
+  if (otherTime && pickHour !== null) text.append(b, ' · pick the minutes');
+  else if (pickDay) text.append(b, ' · pick a time');
+  else if (due) text.append('Now: ', b);
+  b.textContent =
+    otherTime && pickHour !== null ? `${pickDay ? `${dayLabel(pickDay)}, ` : ''}${pickHour}:__ ${pm ? 'PM' : 'AM'}` : pickDay ? dayLabel(pickDay) : due ? whenLabel(due, false) : '';
+  foot.hidden = !b.textContent; // nothing to show: the panel stays short
+  foot.replaceChildren(text);
+  if (due) {
+    const rm = el('button', 'remove', 'Remove') as HTMLButtonElement;
+    rm.type = 'button';
+    rm.addEventListener('click', () => choose(null));
+    foot.append(rm);
+  }
+}
+
+/** Below the anchor, or above it when there is no room; always inside the window. */
 function positionMenu(anchor: DOMRect): void {
   const left = Math.min(anchor.left, innerWidth - menu.offsetWidth - 8);
   let top = anchor.bottom + 4;
   if (top + menu.offsetHeight > innerHeight - 8) top = anchor.top - menu.offsetHeight - 4;
   menu.style.left = `${Math.max(8, left)}px`;
-  menu.style.top = `${Math.max(8, top)}px`;
-}
-
-function showPicker(r: TodoRow): void {
-  const form = document.createElement('form');
-  const input = Object.assign(document.createElement('input'), { type: 'datetime-local', id: 'pick' });
-  input.setAttribute('aria-label', 'Reminder date and time');
-  const next = new Date();
-  next.setHours(next.getHours() + 1, 0, 0, 0);
-  input.value = (r.due ?? stamp(next)).replace(' ', 'T');
-  const set = Object.assign(document.createElement('button'), { type: 'submit', textContent: 'Set', className: 'primary' });
-  form.append(input, set);
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (input.value) choose(input.value.replace('T', ' '));
-  });
-  menu.replaceChildren(form);
-  positionMenu(menuAnchor);
-  input.focus();
+  menu.style.top = `${Math.max(8, Math.min(top, innerHeight - menu.offsetHeight - 8))}px`;
 }
 
 function choose(due: string | null): void {
@@ -450,22 +654,24 @@ function closeMenu(returnFocus: boolean): void {
 
 function onMenuKey(e: KeyboardEvent): void {
   if (menu.hidden) return;
-  const n = options().length;
+  const target = e.target as HTMLElement;
+  const stop = () => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
   if (e.key === 'Escape') {
-    e.preventDefault();
-    e.stopPropagation();
+    stop();
     closeMenu(true);
-  } else if (!n) {
-    // the date picker form handles its own keys
+  } else if (menu.contains(target) && target !== query) {
+    // calendar and time buttons: native Tab, Enter and Space
   } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-    e.preventDefault();
-    e.stopPropagation();
+    stop();
+    const n = options().length;
     setActive((active + (e.key === 'ArrowDown' ? 1 : n - 1)) % n);
   } else if (e.key === 'Enter') {
-    e.preventDefault();
-    e.stopPropagation();
-    options()[active].click();
-  } else if (menuFor?.at !== null && !['Shift', 'Control', 'Alt'].includes(e.key)) {
-    closeMenu(false); // typing goes on; the '@' stays as plain text
+    stop();
+    pickOption(options()[active]);
+  } else if (target !== query && menuFor?.at !== null && !['Shift', 'Control', 'Alt'].includes(e.key)) {
+    closeMenu(false); // typing after '@' goes on in the text; the '@' stays as plain text
   }
 }

@@ -22,6 +22,8 @@ A "Todo" pie action. Write short reminders, see what to do, check them off. A to
 | Reminder | One Windows toast (Electron `Notification`) when the time passes. Click opens the notebook. No repeat, no snooze. |
 | Startup | One summary toast ("N overdue todos") if any open todo is overdue. No per-todo toasts at startup. No state file. |
 | Live updates | Duski watches `todo.md`. Edits from the chat agent or by hand reschedule reminders without a restart. A time moved to the future gets a new toast. |
+| Reminder panel | Opened by the clock or chip, or a typed `@`. Variant E of `prototype-reminder.html`, chosen 2026-11-05. A typed field on top (`parseWhen` in `src/shared/todo.ts`: "fri 3pm", "in 2h", "25/12 10am", "remove"), presets with their day (In 1 hour, Tonight, Tomorrow, This weekend, Next week), the next 3 weeks from Monday, time chips (9 AM to 8 PM) and "Other time…" (AM/PM, 12-hour grid, :00/:15/:30/:45). Every pick sets and closes. After a typed `@` the caret stays in the text: arrows and Enter pick a preset, any other key closes the panel and keeps the `@`. |
+| Chip colors | Today green, tomorrow amber, overdue red. |
 
 ## Out of scope
 
