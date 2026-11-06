@@ -68,6 +68,16 @@ export function toDate(s: string): Date | null {
   return date.getMonth() === mo - 1 && date.getDate() === d && h < 24 && mi < 60 ? date : null;
 }
 
+/**
+ * Checked to-dos stay (struck through) for 24 h after their done: stamp, then only the file keeps them.
+ * A checked to-do with no stamp (a plain markdown "- [x]", typed elsewhere or pasted) stays: its check time is unknown.
+ */
+export function shown(b: Block, now: Date): boolean {
+  if (b.kind !== 'todo' || !b.done) return true;
+  const doneAt = b.doneAt ? toDate(b.doneAt) : null;
+  return !doneAt || now.getTime() - doneAt.getTime() < 24 * 60 * 60 * 1000;
+}
+
 export function stamp(d: Date): string {
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;

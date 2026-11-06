@@ -1,6 +1,6 @@
 // Self-check for the todo.md notebook format. Run: npm run check
 import assert from 'node:assert/strict';
-import { formatBlock, parseBlock, parseTodos, parseWhen, stamp, toDate, type TodoBlock } from './todo.ts';
+import { formatBlock, parseBlock, parseTodos, parseWhen, shown, stamp, toDate, type TodoBlock } from './todo.ts';
 
 const lines = [
   '# Todo',
@@ -67,5 +67,12 @@ const cases: [string, string | null][] = [
   ['', null],
 ];
 for (const [text, expected] of cases) assert.equal(when(text), expected, text);
+
+// Checked to-dos hide 24 h after their done: stamp. Without a stamp the check time is unknown, so they stay.
+const at = (s: string) => toDate(s)!;
+assert.equal(shown(parseBlock('- [x] Plain markdown'), at('2026-11-06 10:00')), true);
+assert.equal(shown(parseBlock('- [x] Checked 23 h ago done:2026-11-05 11:00'), at('2026-11-06 10:00')), true);
+assert.equal(shown(parseBlock('- [x] Checked 25 h ago done:2026-11-05 09:00'), at('2026-11-06 10:00')), false);
+assert.equal(shown(parseBlock('- [ ] Open'), at('2026-11-06 10:00')), true);
 
 console.log('todo format: ok');

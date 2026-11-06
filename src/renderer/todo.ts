@@ -1,4 +1,4 @@
-import { formatBlock, parseBlock, parseWhen, stamp, toDate, type Block, type TodoBlock } from '../shared/todo';
+import { formatBlock, parseBlock, parseWhen, shown, stamp, toDate, type Block, type TodoBlock } from '../shared/todo';
 
 // The whole of todo.md, one block per line, edited like a Notion page. Each block is its own
 // contenteditable; `rows` is the truth and the DOM is rebuilt from it after every structural change.
@@ -86,9 +86,8 @@ function replace(r: Row, b: Block): void {
   rows[rows.indexOf(r)] = { ...b, id: r.id };
 }
 
-/** Checked to-dos stay (struck through) for 24 h after they were checked, then only the file keeps them. */
 function visible(r: Row): boolean {
-  return r.kind !== 'todo' || !r.done || Date.now() - (toDate(r.doneAt ?? '')?.getTime() ?? 0) < DAY_MS;
+  return shown(r, new Date());
 }
 
 function neighbor(r: Row, dir: 1 | -1): Row | undefined {
