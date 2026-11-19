@@ -8,7 +8,7 @@
 
 A radial pie menu for Windows. Press a hotkey to chat with Claude or translate anything on your screen.
 
-<img src="demo/duski-demo.gif" alt="Duski demo: the pie menu opens at the cursor, then Translate text, Translate area with the English painted over a sign, Chat with two files dropped in and previewed, the Todo notebook, Ask about text, and Ask about area" width="720" />
+<img src="demo/duski-demo.gif" alt="Duski demo: the pie menu opens at the cursor, then Translate area paints the English over a Japanese sign, Ask about area explains a TypeError with a diagram, and Chat answers from the todo list" width="720" />
 
 </div>
 
@@ -33,6 +33,8 @@ Duski is an Electron + TypeScript app. All AI work goes through the [Claude Code
 - **Chat** and **Ask** replies use an ADHD-friendly structure in ASD-STE100 Simplified Technical English. The prompt is `REPLY_STYLE_ARGS` in `src/main/claude.ts`. Rewrites, translations, and extracted text keep the tone you ask for.
 - **Translate text** sends Ctrl+C to the active app, reads the clipboard, and then restores your old clipboard.
 - **Translate area** takes a screenshot, crops your box to a PNG, and lets Claude read the image. No OCR library is needed. Claude returns each text block with its position, and Duski paints the English over the original text (like Google Lens), in colors sampled from the screenshot. The popup shows the same text. Closing the popup removes the overlay. `translateArea` needs a model with exact text positions: Sonnet works well, Haiku's boxes are too loose.
+- **Explain mode:** when you ask Duski to explain something in Chat or Ask, it starts with one plain sentence. When the idea has structure (a process, the parts of a system, cause and effect), it adds a Mermaid or SVG diagram, then a short breakdown and the key terms. Click a diagram to open it in the viewer window: scroll to zoom, drag to pan, double-click to reset. Add "no diagram" to your question to turn the diagram off.
+- **Todo reminders:** type `@` in a to-do, or click its clock or chip, to open the reminder panel. Type a time such as `fri 3pm`, `in 2h` or `25/12 10am`, or pick a preset, a day from the next 3 weeks, and a time. The chip is green for today, amber for tomorrow, and red when the reminder is overdue.
 
 ```
 src/main/        tray, hotkey, pie, popup, chat, region capture, claude runner
@@ -58,7 +60,7 @@ npm install
 npm run dist
 ```
 
-Run `release\Duski-Setup-0.1.0.exe`. It asks for the install folder, so you can install Duski on any drive. It installs for your user only, with no admin rights. It adds a Start menu shortcut and a desktop shortcut.
+Run `release\Duski-Setup-<version>.exe`, for example `Duski-Setup-0.1.1.exe`. It asks for the install folder, so you can install Duski on any drive. It installs for your user only, with no admin rights. It adds a Start menu shortcut and a desktop shortcut.
 
 > [!NOTE]
 > The installer has no code signature, so Windows SmartScreen shows a warning. Click **More info → Run anyway**.
